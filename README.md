@@ -2,12 +2,12 @@
 
 ```yaml
 ConfigKafka:
-	Brokers: [""]
-	Async: true
-	Timeout:  500
-	Name:    string
-	Group:   string
-	Topic:   string
+  Brokers: [""]
+  Async: true
+  Timeout:  500
+  Name:    string
+  Group:   string
+  Topic:   string
 
 ConfigRedis:
   Host: ""
