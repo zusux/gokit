@@ -11,7 +11,7 @@ func MustLoad(path string, v any) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = yaml.Unmarshal(file, &v)
+	err = yaml.Unmarshal(file, v)
 	if err != nil {
 		log.Fatal(err)
 	}
