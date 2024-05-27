@@ -1,16 +1,18 @@
 package conf
 
 import (
-	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/file"
+	"gopkg.in/yaml.v3"
 	"log"
+	"os"
 )
 
 func MustLoad(path string, v any) {
-	f := file.Provider(path)
-	k := koanf.New(".")
-	if err := k.Load(f, yaml.Parser()); err != nil {
-		log.Fatalf("loading config err: %v", err.Error())
+	file, err := os.ReadFile(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = yaml.Unmarshal(file, &v)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
