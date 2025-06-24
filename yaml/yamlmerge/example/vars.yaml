@@ -1,8 +1,8 @@
 ENV: dev
 PORT: 8080
 MONGO_DSN:
-  AGGREGATOR_SERVER: mongodb://localhost:27017/order
-  SPORT_LOG: mongodb://localhost:27017/log
+  ORDER_SERVER: mongodb://localhost:27017/order
+  LOG: mongodb://localhost:27017/log
 # [服务]
 FEATURE_FLAGS:
   - alpha
