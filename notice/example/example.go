@@ -1,14 +1,15 @@
-package notice
+package main
 
 import (
 	"context"
 	"fmt"
+	"github.com/zusux/gokit/notice"
 	"time"
 )
 
 func example() {
 	now := time.Now()
-	d := NewDelayNotice()
+	d := notice.NewDelayNotice()
 	go func() {
 		time.Sleep(time.Duration(10) * time.Second)
 		d.Put("222", 33)

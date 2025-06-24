@@ -1,0 +1,11 @@
+ENV: dev
+PORT: 8080
+MONGO_DSN:
+  AGGREGATOR_SERVER: mongodb://localhost:27017/order
+  SPORT_LOG: mongodb://localhost:27017/log
+# [服务]
+FEATURE_FLAGS:
+  - alpha
+  - beta
+RETRY_COUNT: 3 # 重试次数
+IS_ENABLED: true

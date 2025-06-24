@@ -1,7 +1,7 @@
 package conf
 
 import (
-	"github.com/goccy/go-yaml"
+	"gopkg.in/yaml.v3"
 	"log"
 	"os"
 )

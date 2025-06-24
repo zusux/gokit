@@ -1,0 +1,8 @@
+env: ${ENV}
+port: ${PORT}
+mongo:
+  aggregator: ${MONGO_DSN.AGGREGATOR_SERVER}
+  log: ${MONGO_DSN.SPORT_LOG}
+v: ${FEATURE_FLAGS}
+v2: ${IS_ENABLED}
+v3: ${RETRY_COUNT}
