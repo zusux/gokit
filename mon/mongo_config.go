@@ -1,4 +1,4 @@
-package mongo
+package mon
 
 type ConfigMongo struct {
 	Enable  bool              `yaml:"enable" json:"enable"`
