@@ -1,0 +1,60 @@
+syntax = "proto2";
+package zrpc;
+
+option go_package = "user/api/zrpc;zrpc";
+
+import "google/protobuf/descriptor.proto";
+
+// ------------------- 扩展定义 -------------------
+extend google.protobuf.ServiceOptions {
+  optional uint32 service_option_id = 50001;
+}
+
+extend google.protobuf.MethodOptions {
+  optional uint32 method_option_id = 50002;
+}
+
+
+// ------------------- HTTP 扩展 -------------------
+message HttpRouteOptions {
+  optional string get = 1;
+  optional string post = 2;
+}
+
+extend google.protobuf.MethodOptions {
+  optional HttpRouteOptions method_option_http_api = 10003;
+}
+
+// ------------------- 错误信息 -------------------
+message ErrorInfo {
+  optional string source = 1;
+  optional int32 code = 2;
+  optional string message = 3;
+  optional bool retry = 4;
+  optional int64 retry_delay = 5;
+}
+
+// ------------------- 鉴权信息 -------------------
+message CSignKey {
+  optional uint32 type = 1;
+  optional string key = 2;
+  optional string domain = 3;
+  optional uint32 company_id = 4;
+}
+
+// ------------------- 通用头部（精简版） -------------------
+message CRpcHead {
+  optional uint64 origin_uid = 1;
+  optional uint32 service_id = 2;
+  optional uint32 method_id = 3;
+  optional uint32 client_lang = 4;
+  optional uint32 client_ipv4 = 5;
+  optional string device_id = 6;
+
+  optional bytes trace_id = 7;
+  optional bytes span_id = 8;
+
+  optional ErrorInfo err_info = 100;
+
+  extensions 1000 to 1999;
+}
