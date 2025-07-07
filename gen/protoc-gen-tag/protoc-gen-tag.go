@@ -51,8 +51,6 @@ func buildTag(field *protogen.Field, tags []string) string {
 	var buf bytes.Buffer
 	buf.WriteString("protobuf:\"" + string(field.Desc.FullName()) + "\"")
 	for _, t := range tags {
-		buf.WriteString(" ")
-		// Special case for gorm
 		if t == "gorm" {
 			buf.WriteString(fmt.Sprintf(` %s:"column:%s"`, t, field.Desc.JSONName()))
 		} else {
