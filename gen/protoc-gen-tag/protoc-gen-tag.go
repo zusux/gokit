@@ -6,9 +6,9 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"strings"
-
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"strings"
 )
 
 func main() {
@@ -42,14 +42,15 @@ func generateMessage(g *protogen.GeneratedFile, message *protogen.Message, tags 
 	g.P("type ", message.GoIdent.GoName, "WithTag struct {")
 	for _, field := range message.Fields {
 		tag := buildTag(field, tags)
-		g.P(field.GoName, " ", field.Desc.Kind().String(), " `", tag, "`")
+		fieldType := fieldGoType(field)
+		g.P(field.GoName, " ", fieldType, " `", tag, "`")
 	}
 	g.P("}")
 }
 
 func buildTag(field *protogen.Field, tags []string) string {
 	var buf bytes.Buffer
-	buf.WriteString("protobuf:\"" + string(field.Desc.FullName()) + "\"")
+	buf.WriteString("protofield:\"" + string(field.Desc.FullName()) + "\"")
 	for _, t := range tags {
 		if t == "gorm" {
 			buf.WriteString(fmt.Sprintf(` %s:"column:%s"`, t, field.Desc.JSONName()))
@@ -62,4 +63,42 @@ func buildTag(field *protogen.Field, tags []string) string {
 		}
 	}
 	return buf.String()
+}
+
+func fieldGoType(field *protogen.Field) string {
+	if field.Desc.IsList() {
+		// repeated fields (slice)
+		elemType := fieldGoTypeNonList(field)
+		return "[]" + elemType
+	}
+	return fieldGoTypeNonList(field)
+}
+
+func fieldGoTypeNonList(field *protogen.Field) string {
+	if field.Enum != nil || field.Message != nil {
+		return field.GoIdent.GoName
+	}
+
+	switch field.Desc.Kind() {
+	case protoreflect.BoolKind:
+		return "bool"
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
+		return "int32"
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
+		return "int64"
+	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+		return "uint32"
+	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+		return "uint64"
+	case protoreflect.FloatKind:
+		return "float32"
+	case protoreflect.DoubleKind:
+		return "float64"
+	case protoreflect.StringKind:
+		return "string"
+	case protoreflect.BytesKind:
+		return "[]byte"
+	default:
+		return "interface{}"
+	}
 }
