@@ -1,0 +1,19 @@
+syntax = "proto3";
+package user.v1;
+option go_package = "gen/protoc-gen-tag/example;example";
+import "zusux/tag/tag.proto";
+
+message User {
+  string id = 1 [(tag.json) = "id", (tag.bson) = "_id",(tag.gorm) = "column:id"];
+  string name = 2 [(tag.json) = "name", (tag.gorm) = "column:name"];
+}
+
+message UserList {
+  repeated User users = 1 [(tag.json) = "users", (tag.bson) = "users"];
+}
+
+message resp {
+   int32 code = 1;
+   string msg = 2;
+   UserList data = 3 [(tag.json) = "users", (tag.bson) = "users"];
+}

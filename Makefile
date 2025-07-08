@@ -1,6 +1,6 @@
 MODULE := $(shell go list -m)
 
-ZRPC_SRC := third_party/zusux/zrpc.proto
+ZRPC_SRC := third_party/zusux/zrpc/zrpc.proto
 ZRPC_DST_DIR := gserver/zrpc
 ZRPC_DST := $(ZRPC_DST_DIR)/zrpc.proto
 OPENAPI_OUT := gserver/openapi
@@ -13,6 +13,7 @@ init:
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
 	go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
 	go install github.com/google/wire/cmd/wire@latest
+	go install github.com/zusux/gokit/gen/protoc-gen-tag@latest
 
 .PHONY: patch-zrpc
 patch-zrpc:

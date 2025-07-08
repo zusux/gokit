@@ -1,32 +1,32 @@
 // protoc-gen-tag: A simple protoc plugin for adding multiple struct tags
-// Usage: protoc --go_out=. --tag_out=bson,yaml,gorm:. your.proto
+// Usage: protoc --go_out=. --tag_out=. your.proto
 
 package main
 
 import (
-	"bytes"
 	"fmt"
+	"github.com/zusux/gokit/gen/protoc-gen-tag/tag"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/runtime/protoimpl"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"strings"
 )
 
 func main() {
 	protogen.Options{}.Run(func(plugin *protogen.Plugin) error {
-		tagParam := plugin.Request.GetParameter() // e.g., "bson,yaml,gorm"
-		tags := strings.Split(tagParam, ",")
-
 		for _, f := range plugin.Files {
 			if !f.Generate {
 				continue
 			}
-			generateFile(plugin, f, tags)
+			generateFile(plugin, f)
 		}
 		return nil
 	})
 }
 
-func generateFile(plugin *protogen.Plugin, file *protogen.File, tags []string) {
+func generateFile(plugin *protogen.Plugin, file *protogen.File) {
 	filename := file.GeneratedFilenamePrefix + ".tag.go"
 	g := plugin.NewGeneratedFile(filename, file.GoImportPath)
 
@@ -34,49 +34,70 @@ func generateFile(plugin *protogen.Plugin, file *protogen.File, tags []string) {
 	g.P("package ", file.GoPackageName)
 
 	for _, message := range file.Messages {
-		generateMessage(g, message, tags)
+		generateMessage(g, message)
+		generateConvertMethod(g, message)
+		generateReverseConvertMethod(g, message)
 	}
 }
 
-func generateMessage(g *protogen.GeneratedFile, message *protogen.Message, tags []string) {
-	g.P("type ", message.GoIdent.GoName, "WithTag struct {")
+func generateMessage(g *protogen.GeneratedFile, message *protogen.Message) {
+	g.P("type ", message.GoIdent.GoName, "Tag struct {")
 	for _, field := range message.Fields {
-		tag := buildTag(field, tags)
+		tag := buildTag(field)
 		fieldType := fieldGoType(field)
 		g.P(field.GoName, " ", fieldType, " `", tag, "`")
 	}
 	g.P("}")
 }
 
-func buildTag(field *protogen.Field, tags []string) string {
-	var buf bytes.Buffer
-	buf.WriteString("protofield:\"" + string(field.Desc.FullName()) + "\"")
-	for _, t := range tags {
-		if t == "gorm" {
-			buf.WriteString(fmt.Sprintf(` %s:"column:%s"`, t, field.Desc.JSONName()))
-		} else {
-			if field.Desc.HasOptionalKeyword() {
-				buf.WriteString(fmt.Sprintf(` %s:"%s,omitempty"`, t, field.Desc.JSONName()))
-			} else {
-				buf.WriteString(fmt.Sprintf(` %s:"%s"`, t, field.Desc.JSONName()))
-			}
-		}
+func buildTag(field *protogen.Field) string {
+	opts := field.Desc.Options().(*descriptorpb.FieldOptions)
+	fieldName := strings.ToLower(field.GoName)
+	var tags []string
+	if val, ok := getTag(opts, tag.E_Json); ok {
+		tags = append(tags, fmt.Sprintf(`json:"%s"`, val))
+	} else {
+		tags = append(tags, fmt.Sprintf(`json:"%s,omitempty"`, fieldName))
 	}
-	return buf.String()
+	if val, ok := getTag(opts, tag.E_Bson); ok {
+		tags = append(tags, fmt.Sprintf(`bson:"%s"`, val))
+	}
+	if val, ok := getTag(opts, tag.E_Yaml); ok {
+		tags = append(tags, fmt.Sprintf(`yaml:"%s"`, val))
+	}
+	if val, ok := getTag(opts, tag.E_Gorm); ok {
+		tags = append(tags, fmt.Sprintf(`gorm:"%s"`, val))
+	}
+	return strings.Join(tags, " ")
 }
 
+func getTag(opts *descriptorpb.FieldOptions, ext *protoimpl.ExtensionInfo) (string, bool) {
+	if proto.HasExtension(opts, ext) {
+		val := proto.GetExtension(opts, ext)
+		if s, ok := val.(string); ok {
+			return s, true
+		}
+	}
+	return "", false
+}
 func fieldGoType(field *protogen.Field) string {
 	if field.Desc.IsList() {
-		// repeated fields (slice)
+		if field.Message != nil {
+			return "[]*" + field.Message.GoIdent.GoName + "Tag"
+		}
+		// 基础类型 repeated
 		elemType := fieldGoTypeNonList(field)
 		return "[]" + elemType
+	}
+	if field.Message != nil || field.Enum != nil {
+		return "*" + field.Message.GoIdent.GoName + "Tag"
 	}
 	return fieldGoTypeNonList(field)
 }
 
 func fieldGoTypeNonList(field *protogen.Field) string {
 	if field.Enum != nil || field.Message != nil {
-		return field.GoIdent.GoName
+		return field.GoIdent.GoName + "Tag"
 	}
 
 	switch field.Desc.Kind() {
@@ -101,4 +122,83 @@ func fieldGoTypeNonList(field *protogen.Field) string {
 	default:
 		return "interface{}"
 	}
+}
+
+func generateConvertMethod(g *protogen.GeneratedFile, message *protogen.Message) {
+	structName := message.GoIdent.GoName
+	tagName := structName + "Tag"
+
+	g.P()
+	g.P("func (x *", structName, ") To", tagName, "() *", tagName, " {")
+	g.P("if x == nil { return nil }")
+
+	// 对每个字段处理
+	for _, field := range message.Fields {
+		if field.Desc.IsList() && field.Message != nil {
+			sliceName := strings.ToLower(field.GoName) + "TagSlice"
+			elemTagName := field.Message.GoIdent.GoName + "Tag"
+
+			// 先声明切片变量
+			g.P(sliceName, " := make([]*", elemTagName, ", len(x.", field.GoName, "))")
+			g.P("for i, v := range x.", field.GoName, " {")
+			g.P(sliceName, "[i] = v.To", elemTagName, "()")
+			g.P("}")
+
+			// 生成返回结构体
+			g.P("return &", tagName, "{")
+			g.P(field.GoName, ": ", sliceName, ",")
+			g.P("}")
+			g.P("}")
+			return
+		}
+	}
+
+	// 非 repeated message，或基本类型
+	g.P("return &", tagName, "{")
+	for _, field := range message.Fields {
+		if field.Message != nil {
+			g.P(field.GoName, ": x.", field.GoName, ".To", field.Message.GoIdent.GoName, "Tag(),")
+		} else {
+			g.P(field.GoName, ": x.", field.GoName, ",")
+		}
+	}
+	g.P("}")
+	g.P("}")
+}
+func generateReverseConvertMethod(g *protogen.GeneratedFile, message *protogen.Message) {
+	structName := message.GoIdent.GoName
+	tagStructName := structName + "Tag"
+
+	g.P()
+	g.P("func (x *", tagStructName, ") To", structName, "() *", structName, " {")
+	g.P("if x == nil { return nil }")
+
+	// 特殊处理 repeated 嵌套 message
+	for _, field := range message.Fields {
+		if field.Desc.IsList() && field.Message != nil {
+			sliceName := strings.ToLower(field.GoName) + "Slice"
+			elemName := field.Message.GoIdent.GoName
+			g.P(sliceName, " := make([]*", elemName, ", len(x.", field.GoName, "))")
+			g.P("for i, v := range x.", field.GoName, " {")
+			g.P(sliceName, "[i] = v.To", elemName, "()")
+			g.P("}")
+			g.P("return &", structName, "{")
+			g.P(field.GoName, ": ", sliceName, ",")
+			g.P("}")
+			g.P("}")
+			return
+		}
+	}
+
+	// 非 repeated 类型直接赋值或调用子转换函数
+	g.P("return &", structName, "{")
+	for _, field := range message.Fields {
+		if field.Message != nil {
+			g.P(field.GoName, ": x.", field.GoName, ".To", field.Message.GoIdent.GoName, "(),")
+		} else {
+			g.P(field.GoName, ": x.", field.GoName, ",")
+		}
+	}
+	g.P("}")
+	g.P("}")
 }

@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package tag;
+option go_package = "github.com/zusux/gokit/gen/protoc-gen-tag/tag;tag";
+import "google/protobuf/descriptor.proto";
+
+// 为字段扩展定义多个标签支持
+extend google.protobuf.FieldOptions {
+  optional string json = 51001;
+  optional string bson = 51002;
+  optional string yaml = 51003;
+  optional string gorm = 51004;
+}

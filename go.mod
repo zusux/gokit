@@ -7,6 +7,7 @@ toolchain go1.23.10
 require (
 	dario.cat/mergo v1.0.0
 	github.com/go-kratos/kratos/v2 v2.8.4
+	github.com/golang/protobuf v1.5.4
 	github.com/redis/go-redis/v9 v9.5.1
 	github.com/segmentio/kafka-go v0.4.47
 	go.mongodb.org/mongo-driver v1.17.4
