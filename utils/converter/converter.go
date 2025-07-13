@@ -3,6 +3,7 @@ package converter
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/shopspring/decimal"
 	"reflect"
 	"strconv"
 )
@@ -42,7 +43,7 @@ func ToString(value interface{}) string {
 		return strconv.FormatUint(v, 10)
 	case float32:
 		// 直接处理 float32，避免转换为 float64
-		return strconv.FormatFloat(float64(v), 'f', 6, 32) // 6 位小数，符合 float32 精度
+		return decimal.NewFromFloat32(v).StringFixed(6) // 6 位小数，符合 float32 精度
 	case float64:
 		return strconv.FormatFloat(v, 'f', 6, 64) // 6 位小数，符合 float64 精度
 	case complex64:
@@ -53,26 +54,8 @@ func ToString(value interface{}) string {
 		return string(v)
 	case fmt.Stringer:
 		return v.String()
-
-	// 使用反射处理其他类型
 	default:
-		val := reflect.ValueOf(value)
-		switch val.Kind() {
-		case reflect.Ptr:
-			if val.IsNil() {
-				return "nil"
-			}
-			return ToString(val.Elem().Interface()) // 解引用指针
-		case reflect.Slice, reflect.Array, reflect.Map, reflect.Struct:
-			return ToString(value)
-		case reflect.Interface:
-			if val.IsNil() {
-				return "nil"
-			}
-			return ToString(val.Elem().Interface())
-		default:
-			return fmt.Sprintf("%v", value)
-		}
+		return ToString(value)
 	}
 }
 
