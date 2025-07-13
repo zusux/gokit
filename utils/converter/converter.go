@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/shopspring/decimal"
-	"reflect"
+	"log"
 	"strconv"
 )
 
@@ -13,7 +13,6 @@ func ToString(value interface{}) string {
 	if value == nil {
 		return "nil"
 	}
-
 	// 类型断言处理常见类型
 	switch v := value.(type) {
 	// 基本类型
@@ -45,7 +44,7 @@ func ToString(value interface{}) string {
 		// 直接处理 float32，避免转换为 float64
 		return decimal.NewFromFloat32(v).StringFixed(6) // 6 位小数，符合 float32 精度
 	case float64:
-		return strconv.FormatFloat(v, 'f', 6, 64) // 6 位小数，符合 float64 精度
+		return decimal.NewFromFloat(v).StringFixed(6) // 6 位小数，符合 float64 精度
 	case complex64:
 		return fmt.Sprintf("%v", v)
 	case complex128:
@@ -55,7 +54,12 @@ func ToString(value interface{}) string {
 	case fmt.Stringer:
 		return v.String()
 	default:
-		return ToString(value)
+		byteData, err := json.Marshal(value)
+		if err != nil {
+			log.Println("json marshal failed: %w", err)
+			return ""
+		}
+		return string(byteData)
 	}
 }
 
@@ -64,26 +68,6 @@ func ToJSON(value interface{}) (string, error) {
 	if value == nil {
 		return "null", nil
 	}
-
-	// 使用反射检查类型
-	val := reflect.ValueOf(value)
-	switch val.Kind() {
-	case reflect.Func, reflect.Chan, reflect.UnsafePointer:
-		return "", fmt.Errorf("type %s is not JSON-serializable", val.Kind())
-	case reflect.Ptr:
-		if val.IsNil() {
-			return "null", nil
-		}
-		return ToJSON(val.Elem().Interface())
-	case reflect.Interface:
-		if val.IsNil() {
-			return "null", nil
-		}
-		return ToJSON(val.Elem().Interface())
-	case reflect.Complex64, reflect.Complex128:
-		return "", fmt.Errorf("complex types are not JSON-serializable")
-	}
-
 	// 尝试 JSON 序列化
 	jsonBytes, err := json.Marshal(value)
 	if err != nil {
