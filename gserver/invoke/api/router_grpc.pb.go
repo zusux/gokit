@@ -19,139 +19,101 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	InternalRouter_Invoke_FullMethodName         = "/internal.InternalRouter/Invoke"
-	InternalRouter_RegisterRouter_FullMethodName = "/internal.InternalRouter/RegisterRouter"
+	InvokeRouter_Invoke_FullMethodName = "/invoke.InvokeRouter/Invoke"
 )
 
-// InternalRouterClient is the client API for InternalRouter service.
+// InvokeRouterClient is the client API for InvokeRouter service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type InternalRouterClient interface {
+type InvokeRouterClient interface {
 	Invoke(ctx context.Context, in *InvokeReq, opts ...grpc.CallOption) (*InvokeResp, error)
-	RegisterRouter(ctx context.Context, in *RegisterRouterReq, opts ...grpc.CallOption) (*RegisterRouterResp, error)
 }
 
-type internalRouterClient struct {
+type invokeRouterClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewInternalRouterClient(cc grpc.ClientConnInterface) InternalRouterClient {
-	return &internalRouterClient{cc}
+func NewInvokeRouterClient(cc grpc.ClientConnInterface) InvokeRouterClient {
+	return &invokeRouterClient{cc}
 }
 
-func (c *internalRouterClient) Invoke(ctx context.Context, in *InvokeReq, opts ...grpc.CallOption) (*InvokeResp, error) {
+func (c *invokeRouterClient) Invoke(ctx context.Context, in *InvokeReq, opts ...grpc.CallOption) (*InvokeResp, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(InvokeResp)
-	err := c.cc.Invoke(ctx, InternalRouter_Invoke_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, InvokeRouter_Invoke_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *internalRouterClient) RegisterRouter(ctx context.Context, in *RegisterRouterReq, opts ...grpc.CallOption) (*RegisterRouterResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RegisterRouterResp)
-	err := c.cc.Invoke(ctx, InternalRouter_RegisterRouter_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// InternalRouterServer is the server API for InternalRouter service.
-// All implementations must embed UnimplementedInternalRouterServer
+// InvokeRouterServer is the server API for InvokeRouter service.
+// All implementations must embed UnimplementedInvokeRouterServer
 // for forward compatibility.
-type InternalRouterServer interface {
+type InvokeRouterServer interface {
 	Invoke(context.Context, *InvokeReq) (*InvokeResp, error)
-	RegisterRouter(context.Context, *RegisterRouterReq) (*RegisterRouterResp, error)
-	mustEmbedUnimplementedInternalRouterServer()
+	mustEmbedUnimplementedInvokeRouterServer()
 }
 
-// UnimplementedInternalRouterServer must be embedded to have
+// UnimplementedInvokeRouterServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedInternalRouterServer struct{}
+type UnimplementedInvokeRouterServer struct{}
 
-func (UnimplementedInternalRouterServer) Invoke(context.Context, *InvokeReq) (*InvokeResp, error) {
+func (UnimplementedInvokeRouterServer) Invoke(context.Context, *InvokeReq) (*InvokeResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Invoke not implemented")
 }
-func (UnimplementedInternalRouterServer) RegisterRouter(context.Context, *RegisterRouterReq) (*RegisterRouterResp, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RegisterRouter not implemented")
-}
-func (UnimplementedInternalRouterServer) mustEmbedUnimplementedInternalRouterServer() {}
-func (UnimplementedInternalRouterServer) testEmbeddedByValue()                        {}
+func (UnimplementedInvokeRouterServer) mustEmbedUnimplementedInvokeRouterServer() {}
+func (UnimplementedInvokeRouterServer) testEmbeddedByValue()                      {}
 
-// UnsafeInternalRouterServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to InternalRouterServer will
+// UnsafeInvokeRouterServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to InvokeRouterServer will
 // result in compilation errors.
-type UnsafeInternalRouterServer interface {
-	mustEmbedUnimplementedInternalRouterServer()
+type UnsafeInvokeRouterServer interface {
+	mustEmbedUnimplementedInvokeRouterServer()
 }
 
-func RegisterInternalRouterServer(s grpc.ServiceRegistrar, srv InternalRouterServer) {
-	// If the following call pancis, it indicates UnimplementedInternalRouterServer was
+func RegisterInvokeRouterServer(s grpc.ServiceRegistrar, srv InvokeRouterServer) {
+	// If the following call pancis, it indicates UnimplementedInvokeRouterServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&InternalRouter_ServiceDesc, srv)
+	s.RegisterService(&InvokeRouter_ServiceDesc, srv)
 }
 
-func _InternalRouter_Invoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _InvokeRouter_Invoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(InvokeReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InternalRouterServer).Invoke(ctx, in)
+		return srv.(InvokeRouterServer).Invoke(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: InternalRouter_Invoke_FullMethodName,
+		FullMethod: InvokeRouter_Invoke_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InternalRouterServer).Invoke(ctx, req.(*InvokeReq))
+		return srv.(InvokeRouterServer).Invoke(ctx, req.(*InvokeReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _InternalRouter_RegisterRouter_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RegisterRouterReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InternalRouterServer).RegisterRouter(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: InternalRouter_RegisterRouter_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InternalRouterServer).RegisterRouter(ctx, req.(*RegisterRouterReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// InternalRouter_ServiceDesc is the grpc.ServiceDesc for InternalRouter service.
+// InvokeRouter_ServiceDesc is the grpc.ServiceDesc for InvokeRouter service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var InternalRouter_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "internal.InternalRouter",
-	HandlerType: (*InternalRouterServer)(nil),
+var InvokeRouter_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "invoke.InvokeRouter",
+	HandlerType: (*InvokeRouterServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Invoke",
-			Handler:    _InternalRouter_Invoke_Handler,
-		},
-		{
-			MethodName: "RegisterRouter",
-			Handler:    _InternalRouter_RegisterRouter_Handler,
+			Handler:    _InvokeRouter_Invoke_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

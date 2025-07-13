@@ -1,25 +1,17 @@
 syntax = "proto3";
 
-package internal;
+package invoke;
 import "zusux/zrpc/zrpc.proto";
-import "zusux/tag/tag.proto";
 import "google/api/annotations.proto";
 option go_package = "./gserver/invoke/api;api";
 
 
-service InternalRouter {
+service InvokeRouter {
   option (zrpc.service_option_id) = 0x1;
   rpc Invoke(InvokeReq) returns (InvokeResp) {
     option (zrpc.method_option_id) = 0x1;
     option (google.api.http) = {
       get: "/grpc/invoke"
-    };
-  };
-
-  rpc RegisterRouter(RegisterRouterReq) returns (RegisterRouterResp) {
-    option (zrpc.method_option_id) = 0x2;
-    option (google.api.http) = {
-      get: "/app/register_router"
     };
   };
 }
@@ -32,75 +24,6 @@ message InvokeReq {
 }
 
 message InvokeResp {
-  int32 code = 1;
-  string message = 2;
-  string payload_json = 3; // 返回的 JSON 字符串
-}
-
-message Endpoint {
-  string app = 1 [(tag.json)="app",(tag.bson)="app"];
-  uint32 service_id = 2 [(tag.json)="service_id",(tag.bson)="service_id"];
-  string host = 3 [(tag.json)="host",(tag.bson)="host"];
-  optional Auth auth = 4 [(tag.json)="auth",(tag.bson)="auth"];
-  string allow_origin = 5 [(tag.json)="allow_origin",(tag.bson)="allow_origin"];
-  optional Rate  rate = 6 [(tag.json)="rate",(tag.bson)="rate"];
-  int64 timeout = 7 [(tag.json)="timeout",(tag.bson)="timeout"];
-  repeated Target http_target = 8 [(tag.json)="http_target",(tag.bson)="http_target"];
-  repeated Target grpc_target = 9 [(tag.json)="grpc_target",(tag.bson)="grpc_target"];
-  map<string,Request>  requests = 10 [(tag.json)="requests",(tag.bson)="requests"];
-}
-
-message Request {
-  string router = 1 [(tag.json)="router",(tag.bson)="router"];
-  repeated string methods = 2 [(tag.json)="methods",(tag.bson)="methods"];
-  optional Auth auth = 3 [(tag.json)="auth",(tag.bson)="auth"];
-  string allow_origin = 4 [(tag.json)="allow_origin",(tag.bson)="allow_origin"];
-  int64 timeout = 5 [(tag.json)="timeout",(tag.bson)="timeout"];
-  uint32 method_id = 6 [(tag.json)="method_id",(tag.bson)="method_id"];
-  optional Rate rate = 7 [(tag.json)="rate",(tag.bson)="rate"];
-  string robin = 8 [(tag.json)="robin",(tag.bson)="robin"];
-  repeated Target http_target = 9 [(tag.json)="http_target",(tag.bson)="http_target"];
-  repeated Target grpc_target = 10 [(tag.json)="grpc_target",(tag.bson)="grpc_target"];
-  string switch = 11 [(tag.json)="switch",(tag.bson)="switch"];
-  optional Http http = 12 [(tag.json)="http",(tag.bson)="http"];
-  optional Grpc grpc = 13 [(tag.json)="grpc",(tag.bson)="grpc"];
-}
-
-message Http {
-  string protocol = 1 [(tag.json)="protocol",(tag.bson)="protocol"];
-  string method = 2 [(tag.json)="method",(tag.bson)="method"];
-  string path = 3 [(tag.json)="path",(tag.bson)="path"];
-  int64 timeout = 4 [(tag.json)="timeout",(tag.bson)="timeout"];
-}
-message Grpc {
-  string path = 1 [(tag.json)="path",(tag.bson)="path"];
-  int64 timeout = 2 [(tag.json)="timeout",(tag.bson)="timeout"];
-}
-
-
-message Target {
-  string uri = 1 [(tag.json)="uri",(tag.bson)="uri"];
-  int64 weight = 2 [(tag.json)="weight",(tag.bson)="weight"];
-  int64 priority = 3 [(tag.json)="priority",(tag.bson)="priority"];
-}
-
-message Rate {
-   float   limit = 1 [(tag.json)="limit",(tag.bson)="limit"];
-   int64 burst = 2 [(tag.json)="burst",(tag.bson)="burst"];
-}
-
-message RegisterRouterReq {
-  bool register_all = 1 [(tag.json)="register_all",(tag.bson)="register_all"];
-  repeated Endpoint endpoints = 2;
-}
-
-message Auth {
-  bool auth_skip = 1 [(tag.json)="auth_skip",(tag.bson)="auth_skip"];
-  string secret = 2 [(tag.json)="secret",(tag.bson)="secret"];
-  string  token_key = 3 [(tag.json)="token_key",(tag.bson)="token_key"];
-}
-
-message RegisterRouterResp {
   int32 code = 1;
   string message = 2;
   string payload_json = 3; // 返回的 JSON 字符串

@@ -3,31 +3,14 @@
 
 openapi: 3.0.3
 info:
-    title: InternalRouter API
+    title: InvokeRouter API
     version: 0.0.1
 paths:
-    /app/register_router:
-        get:
-            tags:
-                - InternalRouter
-            operationId: InternalRouter_RegisterRouter
-            parameters:
-                - name: registerAll
-                  in: query
-                  schema:
-                    type: boolean
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/internal.RegisterRouterResp'
     /grpc/invoke:
         get:
             tags:
-                - InternalRouter
-            operationId: InternalRouter_Invoke
+                - InvokeRouter
+            operationId: InvokeRouter_Invoke
             parameters:
                 - name: serviceId
                   in: query
@@ -49,20 +32,10 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/internal.InvokeResp'
+                                $ref: '#/components/schemas/invoke.InvokeResp'
 components:
     schemas:
-        internal.InvokeResp:
-            type: object
-            properties:
-                code:
-                    type: integer
-                    format: int32
-                message:
-                    type: string
-                payloadJson:
-                    type: string
-        internal.RegisterRouterResp:
+        invoke.InvokeResp:
             type: object
             properties:
                 code:
@@ -73,4 +46,4 @@ components:
                 payloadJson:
                     type: string
 tags:
-    - name: InternalRouter
+    - name: InvokeRouter

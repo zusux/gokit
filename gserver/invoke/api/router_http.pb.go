@@ -19,27 +19,24 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
-const OperationInternalRouterInvoke = "/internal.InternalRouter/Invoke"
-const OperationInternalRouterRegisterRouter = "/internal.InternalRouter/RegisterRouter"
+const OperationInvokeRouterInvoke = "/invoke.InvokeRouter/Invoke"
 
-type InternalRouterHTTPServer interface {
+type InvokeRouterHTTPServer interface {
 	Invoke(context.Context, *InvokeReq) (*InvokeResp, error)
-	RegisterRouter(context.Context, *RegisterRouterReq) (*RegisterRouterResp, error)
 }
 
-func RegisterInternalRouterHTTPServer(s *http.Server, srv InternalRouterHTTPServer) {
+func RegisterInvokeRouterHTTPServer(s *http.Server, srv InvokeRouterHTTPServer) {
 	r := s.Route("/")
-	r.GET("/grpc/invoke", _InternalRouter_Invoke0_HTTP_Handler(srv))
-	r.GET("/app/register_router", _InternalRouter_RegisterRouter0_HTTP_Handler(srv))
+	r.GET("/grpc/invoke", _InvokeRouter_Invoke0_HTTP_Handler(srv))
 }
 
-func _InternalRouter_Invoke0_HTTP_Handler(srv InternalRouterHTTPServer) func(ctx http.Context) error {
+func _InvokeRouter_Invoke0_HTTP_Handler(srv InvokeRouterHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in InvokeReq
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
-		http.SetOperation(ctx, OperationInternalRouterInvoke)
+		http.SetOperation(ctx, OperationInvokeRouterInvoke)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
 			return srv.Invoke(ctx, req.(*InvokeReq))
 		})
@@ -52,56 +49,23 @@ func _InternalRouter_Invoke0_HTTP_Handler(srv InternalRouterHTTPServer) func(ctx
 	}
 }
 
-func _InternalRouter_RegisterRouter0_HTTP_Handler(srv InternalRouterHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in RegisterRouterReq
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationInternalRouterRegisterRouter)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.RegisterRouter(ctx, req.(*RegisterRouterReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*RegisterRouterResp)
-		return ctx.Result(200, reply)
-	}
-}
-
-type InternalRouterHTTPClient interface {
+type InvokeRouterHTTPClient interface {
 	Invoke(ctx context.Context, req *InvokeReq, opts ...http.CallOption) (rsp *InvokeResp, err error)
-	RegisterRouter(ctx context.Context, req *RegisterRouterReq, opts ...http.CallOption) (rsp *RegisterRouterResp, err error)
 }
 
-type InternalRouterHTTPClientImpl struct {
+type InvokeRouterHTTPClientImpl struct {
 	cc *http.Client
 }
 
-func NewInternalRouterHTTPClient(client *http.Client) InternalRouterHTTPClient {
-	return &InternalRouterHTTPClientImpl{client}
+func NewInvokeRouterHTTPClient(client *http.Client) InvokeRouterHTTPClient {
+	return &InvokeRouterHTTPClientImpl{client}
 }
 
-func (c *InternalRouterHTTPClientImpl) Invoke(ctx context.Context, in *InvokeReq, opts ...http.CallOption) (*InvokeResp, error) {
+func (c *InvokeRouterHTTPClientImpl) Invoke(ctx context.Context, in *InvokeReq, opts ...http.CallOption) (*InvokeResp, error) {
 	var out InvokeResp
 	pattern := "/grpc/invoke"
 	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationInternalRouterInvoke))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *InternalRouterHTTPClientImpl) RegisterRouter(ctx context.Context, in *RegisterRouterReq, opts ...http.CallOption) (*RegisterRouterResp, error) {
-	var out RegisterRouterResp
-	pattern := "/app/register_router"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationInternalRouterRegisterRouter))
+	opts = append(opts, http.Operation(OperationInvokeRouterInvoke))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

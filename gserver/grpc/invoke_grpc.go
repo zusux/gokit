@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func GServer(addr string, timeout time.Duration, extOpts ...grpc.ServerOption) *grpc.Server {
+func InvokeGrpcServer(addr string, timeout time.Duration, extOpts ...grpc.ServerOption) *grpc.Server {
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
 			recovery.Recovery(),
@@ -29,6 +29,6 @@ func GServer(addr string, timeout time.Duration, extOpts ...grpc.ServerOption) *
 		opts = append(opts, v)
 	}
 	srv := grpc.NewServer(opts...)
-	api.RegisterInternalRouterServer(srv, isrv.NewInvokeService())
+	api.RegisterInvokeRouterServer(srv, isrv.NewInvokeService())
 	return srv
 }

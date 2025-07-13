@@ -10,14 +10,14 @@ import (
 )
 
 type InvokeService struct {
-	api.UnimplementedInternalRouterServer
+	api.UnimplementedInvokeRouterServer
 }
 
 func NewInvokeService() *InvokeService {
 	return &InvokeService{}
 }
 
-func (s *InvokeService) Invoke(ctx context.Context, req *api.GenericRequest) (*api.GenericResponse, error) {
+func (s *InvokeService) Invoke(ctx context.Context, req *api.InvokeReq) (*api.InvokeResp, error) {
 	zlog.Infof("Invoke: %v", req)
 	fullID := req.ServiceId<<16 | req.MethodId
 
@@ -40,7 +40,7 @@ func (s *InvokeService) Invoke(ctx context.Context, req *api.GenericRequest) (*a
 	if err != nil {
 		return nil, fmt.Errorf("response marshal error: %w", err)
 	}
-	return &api.GenericResponse{
+	return &api.InvokeResp{
 		PayloadJson: string(respJson),
 	}, nil
 }
