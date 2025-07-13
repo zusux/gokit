@@ -1,7 +1,7 @@
 syntax = "proto2";
 
 package tag;
-option go_package = "github.com/zusux/gokit/gen/protoc-gen-tag/tag;tag";
+option go_package = "github.com/zusux/gokit/protoc-gen-tag/tag;tag";
 import "google/protobuf/descriptor.proto";
 
 // 为字段扩展定义多个标签支持

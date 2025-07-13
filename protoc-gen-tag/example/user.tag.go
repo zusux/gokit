@@ -4,6 +4,7 @@ package example
 type UserTag struct {
 	Id   string `json:"id" bson:"_id" gorm:"column:id"`
 	Name string `json:"name" gorm:"column:name"`
+	Age  string `json:"age,omitempty"`
 }
 
 func (x *User) ToUserTag() *UserTag {
@@ -13,9 +14,9 @@ func (x *User) ToUserTag() *UserTag {
 	return &UserTag{
 		Id:   x.Id,
 		Name: x.Name,
+		Age:  x.Age,
 	}
 }
-
 func (x *UserTag) ToUser() *User {
 	if x == nil {
 		return nil
@@ -23,6 +24,7 @@ func (x *UserTag) ToUser() *User {
 	return &User{
 		Id:   x.Id,
 		Name: x.Name,
+		Age:  x.Age,
 	}
 }
 
@@ -34,25 +36,28 @@ func (x *UserList) ToUserListTag() *UserListTag {
 	if x == nil {
 		return nil
 	}
-	usersTagSlice := make([]*UserTag, len(x.Users))
-	for i, v := range x.Users {
-		usersTagSlice[i] = v.ToUserTag()
-	}
 	return &UserListTag{
-		Users: usersTagSlice,
+		Users: func() []*UserTag {
+			out := make([]*UserTag, len(x.Users))
+			for i, v := range x.Users {
+				out[i] = v.ToUserTag()
+			}
+			return out
+		}(),
 	}
 }
-
 func (x *UserListTag) ToUserList() *UserList {
 	if x == nil {
 		return nil
 	}
-	usersSlice := make([]*User, len(x.Users))
-	for i, v := range x.Users {
-		usersSlice[i] = v.ToUser()
-	}
 	return &UserList{
-		Users: usersSlice,
+		Users: func() []*User {
+			out := make([]*User, len(x.Users))
+			for i, v := range x.Users {
+				out[i] = v.ToUser()
+			}
+			return out
+		}(),
 	}
 }
 
@@ -72,7 +77,6 @@ func (x *Resp) ToRespTag() *RespTag {
 		Data: x.Data.ToUserListTag(),
 	}
 }
-
 func (x *RespTag) ToResp() *Resp {
 	if x == nil {
 		return nil

@@ -19,14 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	InternalRouter_Invoke_FullMethodName = "/api.InternalRouter/Invoke"
+	InternalRouter_Invoke_FullMethodName         = "/internal.InternalRouter/Invoke"
+	InternalRouter_RegisterRouter_FullMethodName = "/internal.InternalRouter/RegisterRouter"
 )
 
 // InternalRouterClient is the client API for InternalRouter service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type InternalRouterClient interface {
-	Invoke(ctx context.Context, in *GenericRequest, opts ...grpc.CallOption) (*GenericResponse, error)
+	Invoke(ctx context.Context, in *InvokeReq, opts ...grpc.CallOption) (*InvokeResp, error)
+	RegisterRouter(ctx context.Context, in *RegisterRouterReq, opts ...grpc.CallOption) (*RegisterRouterResp, error)
 }
 
 type internalRouterClient struct {
@@ -37,10 +39,20 @@ func NewInternalRouterClient(cc grpc.ClientConnInterface) InternalRouterClient {
 	return &internalRouterClient{cc}
 }
 
-func (c *internalRouterClient) Invoke(ctx context.Context, in *GenericRequest, opts ...grpc.CallOption) (*GenericResponse, error) {
+func (c *internalRouterClient) Invoke(ctx context.Context, in *InvokeReq, opts ...grpc.CallOption) (*InvokeResp, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GenericResponse)
+	out := new(InvokeResp)
 	err := c.cc.Invoke(ctx, InternalRouter_Invoke_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalRouterClient) RegisterRouter(ctx context.Context, in *RegisterRouterReq, opts ...grpc.CallOption) (*RegisterRouterResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RegisterRouterResp)
+	err := c.cc.Invoke(ctx, InternalRouter_RegisterRouter_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +63,8 @@ func (c *internalRouterClient) Invoke(ctx context.Context, in *GenericRequest, o
 // All implementations must embed UnimplementedInternalRouterServer
 // for forward compatibility.
 type InternalRouterServer interface {
-	Invoke(context.Context, *GenericRequest) (*GenericResponse, error)
+	Invoke(context.Context, *InvokeReq) (*InvokeResp, error)
+	RegisterRouter(context.Context, *RegisterRouterReq) (*RegisterRouterResp, error)
 	mustEmbedUnimplementedInternalRouterServer()
 }
 
@@ -62,8 +75,11 @@ type InternalRouterServer interface {
 // pointer dereference when methods are called.
 type UnimplementedInternalRouterServer struct{}
 
-func (UnimplementedInternalRouterServer) Invoke(context.Context, *GenericRequest) (*GenericResponse, error) {
+func (UnimplementedInternalRouterServer) Invoke(context.Context, *InvokeReq) (*InvokeResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Invoke not implemented")
+}
+func (UnimplementedInternalRouterServer) RegisterRouter(context.Context, *RegisterRouterReq) (*RegisterRouterResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterRouter not implemented")
 }
 func (UnimplementedInternalRouterServer) mustEmbedUnimplementedInternalRouterServer() {}
 func (UnimplementedInternalRouterServer) testEmbeddedByValue()                        {}
@@ -87,7 +103,7 @@ func RegisterInternalRouterServer(s grpc.ServiceRegistrar, srv InternalRouterSer
 }
 
 func _InternalRouter_Invoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenericRequest)
+	in := new(InvokeReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -99,7 +115,25 @@ func _InternalRouter_Invoke_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: InternalRouter_Invoke_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InternalRouterServer).Invoke(ctx, req.(*GenericRequest))
+		return srv.(InternalRouterServer).Invoke(ctx, req.(*InvokeReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InternalRouter_RegisterRouter_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterRouterReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalRouterServer).RegisterRouter(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InternalRouter_RegisterRouter_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalRouterServer).RegisterRouter(ctx, req.(*RegisterRouterReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -108,12 +142,16 @@ func _InternalRouter_Invoke_Handler(srv interface{}, ctx context.Context, dec fu
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var InternalRouter_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "api.InternalRouter",
+	ServiceName: "internal.InternalRouter",
 	HandlerType: (*InternalRouterServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Invoke",
 			Handler:    _InternalRouter_Invoke_Handler,
+		},
+		{
+			MethodName: "RegisterRouter",
+			Handler:    _InternalRouter_RegisterRouter_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

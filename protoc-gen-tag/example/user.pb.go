@@ -26,6 +26,7 @@ type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Age           string                 `protobuf:"bytes,3,opt,name=age,proto3" json:"age,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -70,6 +71,13 @@ func (x *User) GetId() string {
 func (x *User) GetName() string {
 	if x != nil {
 		return x.Name
+	}
+	return ""
+}
+
+func (x *User) GetAge() string {
+	if x != nil {
+		return x.Age
 	}
 	return ""
 }
@@ -182,10 +190,11 @@ var File_gen_protoc_gen_tag_example_user_proto protoreflect.FileDescriptor
 
 const file_gen_protoc_gen_tag_example_user_proto_rawDesc = "" +
 	"\n" +
-	"%gen/protoc-gen-tag/example/user.proto\x12\auser.v1\x1a\x13zusux/tag/tag.proto\"_\n" +
+	"%gen/protoc-gen-tag/example/user.proto\x12\auser.v1\x1a\x13zusux/tag/tag.proto\"q\n" +
 	"\x04User\x12*\n" +
 	"\x02id\x18\x01 \x01(\tB\x1a\xca\xf3\x18\x02id\xd2\xf3\x18\x03_id\xe2\xf3\x18\tcolumn:idR\x02id\x12+\n" +
-	"\x04name\x18\x02 \x01(\tB\x17\xca\xf3\x18\x04name\xe2\xf3\x18\vcolumn:nameR\x04name\"C\n" +
+	"\x04name\x18\x02 \x01(\tB\x17\xca\xf3\x18\x04name\xe2\xf3\x18\vcolumn:nameR\x04name\x12\x10\n" +
+	"\x03age\x18\x03 \x01(\tR\x03age\"C\n" +
 	"\bUserList\x127\n" +
 	"\x05users\x18\x01 \x03(\v2\r.user.v1.UserB\x12\xca\xf3\x18\x05users\xd2\xf3\x18\x05usersR\x05users\"g\n" +
 	"\x04resp\x12\x12\n" +

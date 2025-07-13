@@ -7,6 +7,9 @@
 package api
 
 import (
+	_ "github.com/zusux/gokit/gserver/zrpc"
+	_ "github.com/zusux/gokit/protoc-gen-tag/tag"
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -21,7 +24,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type GenericRequest struct {
+type InvokeReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ServiceId     uint32                 `protobuf:"varint,1,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
 	MethodId      uint32                 `protobuf:"varint,2,opt,name=method_id,json=methodId,proto3" json:"method_id,omitempty"`
@@ -31,20 +34,20 @@ type GenericRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GenericRequest) Reset() {
-	*x = GenericRequest{}
+func (x *InvokeReq) Reset() {
+	*x = InvokeReq{}
 	mi := &file_gserver_invoke_api_router_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GenericRequest) String() string {
+func (x *InvokeReq) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GenericRequest) ProtoMessage() {}
+func (*InvokeReq) ProtoMessage() {}
 
-func (x *GenericRequest) ProtoReflect() protoreflect.Message {
+func (x *InvokeReq) ProtoReflect() protoreflect.Message {
 	mi := &file_gserver_invoke_api_router_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -56,40 +59,40 @@ func (x *GenericRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GenericRequest.ProtoReflect.Descriptor instead.
-func (*GenericRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use InvokeReq.ProtoReflect.Descriptor instead.
+func (*InvokeReq) Descriptor() ([]byte, []int) {
 	return file_gserver_invoke_api_router_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *GenericRequest) GetServiceId() uint32 {
+func (x *InvokeReq) GetServiceId() uint32 {
 	if x != nil {
 		return x.ServiceId
 	}
 	return 0
 }
 
-func (x *GenericRequest) GetMethodId() uint32 {
+func (x *InvokeReq) GetMethodId() uint32 {
 	if x != nil {
 		return x.MethodId
 	}
 	return 0
 }
 
-func (x *GenericRequest) GetHeaders() map[string]string {
+func (x *InvokeReq) GetHeaders() map[string]string {
 	if x != nil {
 		return x.Headers
 	}
 	return nil
 }
 
-func (x *GenericRequest) GetPayloadJson() string {
+func (x *InvokeReq) GetPayloadJson() string {
 	if x != nil {
 		return x.PayloadJson
 	}
 	return ""
 }
 
-type GenericResponse struct {
+type InvokeResp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Code          int32                  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
@@ -98,20 +101,20 @@ type GenericResponse struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GenericResponse) Reset() {
-	*x = GenericResponse{}
+func (x *InvokeResp) Reset() {
+	*x = InvokeResp{}
 	mi := &file_gserver_invoke_api_router_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GenericResponse) String() string {
+func (x *InvokeResp) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GenericResponse) ProtoMessage() {}
+func (*InvokeResp) ProtoMessage() {}
 
-func (x *GenericResponse) ProtoReflect() protoreflect.Message {
+func (x *InvokeResp) ProtoReflect() protoreflect.Message {
 	mi := &file_gserver_invoke_api_router_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -123,26 +126,686 @@ func (x *GenericResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GenericResponse.ProtoReflect.Descriptor instead.
-func (*GenericResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use InvokeResp.ProtoReflect.Descriptor instead.
+func (*InvokeResp) Descriptor() ([]byte, []int) {
 	return file_gserver_invoke_api_router_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *GenericResponse) GetCode() int32 {
+func (x *InvokeResp) GetCode() int32 {
 	if x != nil {
 		return x.Code
 	}
 	return 0
 }
 
-func (x *GenericResponse) GetMessage() string {
+func (x *InvokeResp) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
 	return ""
 }
 
-func (x *GenericResponse) GetPayloadJson() string {
+func (x *InvokeResp) GetPayloadJson() string {
+	if x != nil {
+		return x.PayloadJson
+	}
+	return ""
+}
+
+type Endpoint struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	App           string                 `protobuf:"bytes,1,opt,name=app,proto3" json:"app,omitempty"`
+	ServiceId     uint32                 `protobuf:"varint,2,opt,name=service_id,json=serviceId,proto3" json:"service_id,omitempty"`
+	Host          string                 `protobuf:"bytes,3,opt,name=host,proto3" json:"host,omitempty"`
+	Auth          *Auth                  `protobuf:"bytes,4,opt,name=auth,proto3,oneof" json:"auth,omitempty"`
+	AllowOrigin   string                 `protobuf:"bytes,5,opt,name=allow_origin,json=allowOrigin,proto3" json:"allow_origin,omitempty"`
+	Rate          *Rate                  `protobuf:"bytes,6,opt,name=rate,proto3,oneof" json:"rate,omitempty"`
+	Timeout       int64                  `protobuf:"varint,7,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	HttpTarget    []*Target              `protobuf:"bytes,8,rep,name=http_target,json=httpTarget,proto3" json:"http_target,omitempty"`
+	GrpcTarget    []*Target              `protobuf:"bytes,9,rep,name=grpc_target,json=grpcTarget,proto3" json:"grpc_target,omitempty"`
+	Requests      map[string]*Request    `protobuf:"bytes,10,rep,name=requests,proto3" json:"requests,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Endpoint) Reset() {
+	*x = Endpoint{}
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Endpoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Endpoint) ProtoMessage() {}
+
+func (x *Endpoint) ProtoReflect() protoreflect.Message {
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Endpoint.ProtoReflect.Descriptor instead.
+func (*Endpoint) Descriptor() ([]byte, []int) {
+	return file_gserver_invoke_api_router_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Endpoint) GetApp() string {
+	if x != nil {
+		return x.App
+	}
+	return ""
+}
+
+func (x *Endpoint) GetServiceId() uint32 {
+	if x != nil {
+		return x.ServiceId
+	}
+	return 0
+}
+
+func (x *Endpoint) GetHost() string {
+	if x != nil {
+		return x.Host
+	}
+	return ""
+}
+
+func (x *Endpoint) GetAuth() *Auth {
+	if x != nil {
+		return x.Auth
+	}
+	return nil
+}
+
+func (x *Endpoint) GetAllowOrigin() string {
+	if x != nil {
+		return x.AllowOrigin
+	}
+	return ""
+}
+
+func (x *Endpoint) GetRate() *Rate {
+	if x != nil {
+		return x.Rate
+	}
+	return nil
+}
+
+func (x *Endpoint) GetTimeout() int64 {
+	if x != nil {
+		return x.Timeout
+	}
+	return 0
+}
+
+func (x *Endpoint) GetHttpTarget() []*Target {
+	if x != nil {
+		return x.HttpTarget
+	}
+	return nil
+}
+
+func (x *Endpoint) GetGrpcTarget() []*Target {
+	if x != nil {
+		return x.GrpcTarget
+	}
+	return nil
+}
+
+func (x *Endpoint) GetRequests() map[string]*Request {
+	if x != nil {
+		return x.Requests
+	}
+	return nil
+}
+
+type Request struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Router        string                 `protobuf:"bytes,1,opt,name=router,proto3" json:"router,omitempty"`
+	Methods       []string               `protobuf:"bytes,2,rep,name=methods,proto3" json:"methods,omitempty"`
+	Auth          *Auth                  `protobuf:"bytes,3,opt,name=auth,proto3,oneof" json:"auth,omitempty"`
+	AllowOrigin   string                 `protobuf:"bytes,4,opt,name=allow_origin,json=allowOrigin,proto3" json:"allow_origin,omitempty"`
+	Timeout       int64                  `protobuf:"varint,5,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	MethodId      uint32                 `protobuf:"varint,6,opt,name=method_id,json=methodId,proto3" json:"method_id,omitempty"`
+	Rate          *Rate                  `protobuf:"bytes,7,opt,name=rate,proto3,oneof" json:"rate,omitempty"`
+	Robin         string                 `protobuf:"bytes,8,opt,name=robin,proto3" json:"robin,omitempty"`
+	HttpTarget    []*Target              `protobuf:"bytes,9,rep,name=http_target,json=httpTarget,proto3" json:"http_target,omitempty"`
+	GrpcTarget    []*Target              `protobuf:"bytes,10,rep,name=grpc_target,json=grpcTarget,proto3" json:"grpc_target,omitempty"`
+	Switch        string                 `protobuf:"bytes,11,opt,name=switch,proto3" json:"switch,omitempty"`
+	Http          *Http                  `protobuf:"bytes,12,opt,name=http,proto3,oneof" json:"http,omitempty"`
+	Grpc          *Grpc                  `protobuf:"bytes,13,opt,name=grpc,proto3,oneof" json:"grpc,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Request) Reset() {
+	*x = Request{}
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Request) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Request) ProtoMessage() {}
+
+func (x *Request) ProtoReflect() protoreflect.Message {
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Request.ProtoReflect.Descriptor instead.
+func (*Request) Descriptor() ([]byte, []int) {
+	return file_gserver_invoke_api_router_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Request) GetRouter() string {
+	if x != nil {
+		return x.Router
+	}
+	return ""
+}
+
+func (x *Request) GetMethods() []string {
+	if x != nil {
+		return x.Methods
+	}
+	return nil
+}
+
+func (x *Request) GetAuth() *Auth {
+	if x != nil {
+		return x.Auth
+	}
+	return nil
+}
+
+func (x *Request) GetAllowOrigin() string {
+	if x != nil {
+		return x.AllowOrigin
+	}
+	return ""
+}
+
+func (x *Request) GetTimeout() int64 {
+	if x != nil {
+		return x.Timeout
+	}
+	return 0
+}
+
+func (x *Request) GetMethodId() uint32 {
+	if x != nil {
+		return x.MethodId
+	}
+	return 0
+}
+
+func (x *Request) GetRate() *Rate {
+	if x != nil {
+		return x.Rate
+	}
+	return nil
+}
+
+func (x *Request) GetRobin() string {
+	if x != nil {
+		return x.Robin
+	}
+	return ""
+}
+
+func (x *Request) GetHttpTarget() []*Target {
+	if x != nil {
+		return x.HttpTarget
+	}
+	return nil
+}
+
+func (x *Request) GetGrpcTarget() []*Target {
+	if x != nil {
+		return x.GrpcTarget
+	}
+	return nil
+}
+
+func (x *Request) GetSwitch() string {
+	if x != nil {
+		return x.Switch
+	}
+	return ""
+}
+
+func (x *Request) GetHttp() *Http {
+	if x != nil {
+		return x.Http
+	}
+	return nil
+}
+
+func (x *Request) GetGrpc() *Grpc {
+	if x != nil {
+		return x.Grpc
+	}
+	return nil
+}
+
+type Http struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Protocol      string                 `protobuf:"bytes,1,opt,name=protocol,proto3" json:"protocol,omitempty"`
+	Method        string                 `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`
+	Path          string                 `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
+	Timeout       int64                  `protobuf:"varint,4,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Http) Reset() {
+	*x = Http{}
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Http) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Http) ProtoMessage() {}
+
+func (x *Http) ProtoReflect() protoreflect.Message {
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Http.ProtoReflect.Descriptor instead.
+func (*Http) Descriptor() ([]byte, []int) {
+	return file_gserver_invoke_api_router_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *Http) GetProtocol() string {
+	if x != nil {
+		return x.Protocol
+	}
+	return ""
+}
+
+func (x *Http) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
+func (x *Http) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *Http) GetTimeout() int64 {
+	if x != nil {
+		return x.Timeout
+	}
+	return 0
+}
+
+type Grpc struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Timeout       int64                  `protobuf:"varint,2,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Grpc) Reset() {
+	*x = Grpc{}
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Grpc) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Grpc) ProtoMessage() {}
+
+func (x *Grpc) ProtoReflect() protoreflect.Message {
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Grpc.ProtoReflect.Descriptor instead.
+func (*Grpc) Descriptor() ([]byte, []int) {
+	return file_gserver_invoke_api_router_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *Grpc) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *Grpc) GetTimeout() int64 {
+	if x != nil {
+		return x.Timeout
+	}
+	return 0
+}
+
+type Target struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Uri           string                 `protobuf:"bytes,1,opt,name=uri,proto3" json:"uri,omitempty"`
+	Weight        int64                  `protobuf:"varint,2,opt,name=weight,proto3" json:"weight,omitempty"`
+	Priority      int64                  `protobuf:"varint,3,opt,name=priority,proto3" json:"priority,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Target) Reset() {
+	*x = Target{}
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Target) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Target) ProtoMessage() {}
+
+func (x *Target) ProtoReflect() protoreflect.Message {
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Target.ProtoReflect.Descriptor instead.
+func (*Target) Descriptor() ([]byte, []int) {
+	return file_gserver_invoke_api_router_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *Target) GetUri() string {
+	if x != nil {
+		return x.Uri
+	}
+	return ""
+}
+
+func (x *Target) GetWeight() int64 {
+	if x != nil {
+		return x.Weight
+	}
+	return 0
+}
+
+func (x *Target) GetPriority() int64 {
+	if x != nil {
+		return x.Priority
+	}
+	return 0
+}
+
+type Rate struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Limit         float32                `protobuf:"fixed32,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	Burst         int64                  `protobuf:"varint,2,opt,name=burst,proto3" json:"burst,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Rate) Reset() {
+	*x = Rate{}
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Rate) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Rate) ProtoMessage() {}
+
+func (x *Rate) ProtoReflect() protoreflect.Message {
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Rate.ProtoReflect.Descriptor instead.
+func (*Rate) Descriptor() ([]byte, []int) {
+	return file_gserver_invoke_api_router_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Rate) GetLimit() float32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *Rate) GetBurst() int64 {
+	if x != nil {
+		return x.Burst
+	}
+	return 0
+}
+
+type RegisterRouterReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RegisterAll   bool                   `protobuf:"varint,1,opt,name=register_all,json=registerAll,proto3" json:"register_all,omitempty"`
+	Endpoints     []*Endpoint            `protobuf:"bytes,2,rep,name=endpoints,proto3" json:"endpoints,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisterRouterReq) Reset() {
+	*x = RegisterRouterReq{}
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterRouterReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterRouterReq) ProtoMessage() {}
+
+func (x *RegisterRouterReq) ProtoReflect() protoreflect.Message {
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterRouterReq.ProtoReflect.Descriptor instead.
+func (*RegisterRouterReq) Descriptor() ([]byte, []int) {
+	return file_gserver_invoke_api_router_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *RegisterRouterReq) GetRegisterAll() bool {
+	if x != nil {
+		return x.RegisterAll
+	}
+	return false
+}
+
+func (x *RegisterRouterReq) GetEndpoints() []*Endpoint {
+	if x != nil {
+		return x.Endpoints
+	}
+	return nil
+}
+
+type Auth struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AuthSkip      bool                   `protobuf:"varint,1,opt,name=auth_skip,json=authSkip,proto3" json:"auth_skip,omitempty"`
+	Secret        string                 `protobuf:"bytes,2,opt,name=secret,proto3" json:"secret,omitempty"`
+	TokenKey      string                 `protobuf:"bytes,3,opt,name=token_key,json=tokenKey,proto3" json:"token_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Auth) Reset() {
+	*x = Auth{}
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Auth) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Auth) ProtoMessage() {}
+
+func (x *Auth) ProtoReflect() protoreflect.Message {
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Auth.ProtoReflect.Descriptor instead.
+func (*Auth) Descriptor() ([]byte, []int) {
+	return file_gserver_invoke_api_router_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *Auth) GetAuthSkip() bool {
+	if x != nil {
+		return x.AuthSkip
+	}
+	return false
+}
+
+func (x *Auth) GetSecret() string {
+	if x != nil {
+		return x.Secret
+	}
+	return ""
+}
+
+func (x *Auth) GetTokenKey() string {
+	if x != nil {
+		return x.TokenKey
+	}
+	return ""
+}
+
+type RegisterRouterResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Code          int32                  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	PayloadJson   string                 `protobuf:"bytes,3,opt,name=payload_json,json=payloadJson,proto3" json:"payload_json,omitempty"` // 返回的 JSON 字符串
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisterRouterResp) Reset() {
+	*x = RegisterRouterResp{}
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterRouterResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterRouterResp) ProtoMessage() {}
+
+func (x *RegisterRouterResp) ProtoReflect() protoreflect.Message {
+	mi := &file_gserver_invoke_api_router_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterRouterResp.ProtoReflect.Descriptor instead.
+func (*RegisterRouterResp) Descriptor() ([]byte, []int) {
+	return file_gserver_invoke_api_router_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *RegisterRouterResp) GetCode() int32 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *RegisterRouterResp) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *RegisterRouterResp) GetPayloadJson() string {
 	if x != nil {
 		return x.PayloadJson
 	}
@@ -153,22 +816,93 @@ var File_gserver_invoke_api_router_proto protoreflect.FileDescriptor
 
 const file_gserver_invoke_api_router_proto_rawDesc = "" +
 	"\n" +
-	"\x1fgserver/invoke/api/router.proto\x12\x03api\"\xe7\x01\n" +
-	"\x0eGenericRequest\x12\x1d\n" +
+	"\x1fgserver/invoke/api/router.proto\x12\binternal\x1a\x15zusux/zrpc/zrpc.proto\x1a\x13zusux/tag/tag.proto\x1a\x1cgoogle/api/annotations.proto\"\xe2\x01\n" +
+	"\tInvokeReq\x12\x1d\n" +
 	"\n" +
 	"service_id\x18\x01 \x01(\rR\tserviceId\x12\x1b\n" +
 	"\tmethod_id\x18\x02 \x01(\rR\bmethodId\x12:\n" +
-	"\aheaders\x18\x03 \x03(\v2 .api.GenericRequest.HeadersEntryR\aheaders\x12!\n" +
+	"\aheaders\x18\x03 \x03(\v2 .internal.InvokeReq.HeadersEntryR\aheaders\x12!\n" +
 	"\fpayload_json\x18\x04 \x01(\tR\vpayloadJson\x1a:\n" +
 	"\fHeadersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"b\n" +
-	"\x0fGenericResponse\x12\x12\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"]\n" +
+	"\n" +
+	"InvokeResp\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12!\n" +
-	"\fpayload_json\x18\x03 \x01(\tR\vpayloadJson2E\n" +
-	"\x0eInternalRouter\x123\n" +
-	"\x06Invoke\x12\x13.api.GenericRequest\x1a\x14.api.GenericResponseB/Z-github.com/zusux/gokit/gserver/invoke/api;apib\x06proto3"
+	"\fpayload_json\x18\x03 \x01(\tR\vpayloadJson\"\xdc\x05\n" +
+	"\bEndpoint\x12 \n" +
+	"\x03app\x18\x01 \x01(\tB\x0e\xca\xf3\x18\x03app\xd2\xf3\x18\x03appR\x03app\x12;\n" +
+	"\n" +
+	"service_id\x18\x02 \x01(\rB\x1c\xca\xf3\x18\n" +
+	"service_id\xd2\xf3\x18\n" +
+	"service_idR\tserviceId\x12$\n" +
+	"\x04host\x18\x03 \x01(\tB\x10\xca\xf3\x18\x04host\xd2\xf3\x18\x04hostR\x04host\x129\n" +
+	"\x04auth\x18\x04 \x01(\v2\x0e.internal.AuthB\x10\xca\xf3\x18\x04auth\xd2\xf3\x18\x04authH\x00R\x04auth\x88\x01\x01\x12C\n" +
+	"\fallow_origin\x18\x05 \x01(\tB \xca\xf3\x18\fallow_origin\xd2\xf3\x18\fallow_originR\vallowOrigin\x129\n" +
+	"\x04rate\x18\x06 \x01(\v2\x0e.internal.RateB\x10\xca\xf3\x18\x04rate\xd2\xf3\x18\x04rateH\x01R\x04rate\x88\x01\x01\x120\n" +
+	"\atimeout\x18\a \x01(\x03B\x16\xca\xf3\x18\atimeout\xd2\xf3\x18\atimeoutR\atimeout\x12Q\n" +
+	"\vhttp_target\x18\b \x03(\v2\x10.internal.TargetB\x1e\xca\xf3\x18\vhttp_target\xd2\xf3\x18\vhttp_targetR\n" +
+	"httpTarget\x12Q\n" +
+	"\vgrpc_target\x18\t \x03(\v2\x10.internal.TargetB\x1e\xca\xf3\x18\vgrpc_target\xd2\xf3\x18\vgrpc_targetR\n" +
+	"grpcTarget\x12V\n" +
+	"\brequests\x18\n" +
+	" \x03(\v2 .internal.Endpoint.RequestsEntryB\x18\xca\xf3\x18\brequests\xd2\xf3\x18\brequestsR\brequests\x1aN\n" +
+	"\rRequestsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12'\n" +
+	"\x05value\x18\x02 \x01(\v2\x11.internal.RequestR\x05value:\x028\x01B\a\n" +
+	"\x05_authB\a\n" +
+	"\x05_rate\"\xa7\x06\n" +
+	"\aRequest\x12,\n" +
+	"\x06router\x18\x01 \x01(\tB\x14\xca\xf3\x18\x06router\xd2\xf3\x18\x06routerR\x06router\x120\n" +
+	"\amethods\x18\x02 \x03(\tB\x16\xca\xf3\x18\amethods\xd2\xf3\x18\amethodsR\amethods\x129\n" +
+	"\x04auth\x18\x03 \x01(\v2\x0e.internal.AuthB\x10\xca\xf3\x18\x04auth\xd2\xf3\x18\x04authH\x00R\x04auth\x88\x01\x01\x12C\n" +
+	"\fallow_origin\x18\x04 \x01(\tB \xca\xf3\x18\fallow_origin\xd2\xf3\x18\fallow_originR\vallowOrigin\x120\n" +
+	"\atimeout\x18\x05 \x01(\x03B\x16\xca\xf3\x18\atimeout\xd2\xf3\x18\atimeoutR\atimeout\x127\n" +
+	"\tmethod_id\x18\x06 \x01(\rB\x1a\xca\xf3\x18\tmethod_id\xd2\xf3\x18\tmethod_idR\bmethodId\x129\n" +
+	"\x04rate\x18\a \x01(\v2\x0e.internal.RateB\x10\xca\xf3\x18\x04rate\xd2\xf3\x18\x04rateH\x01R\x04rate\x88\x01\x01\x12(\n" +
+	"\x05robin\x18\b \x01(\tB\x12\xca\xf3\x18\x05robin\xd2\xf3\x18\x05robinR\x05robin\x12Q\n" +
+	"\vhttp_target\x18\t \x03(\v2\x10.internal.TargetB\x1e\xca\xf3\x18\vhttp_target\xd2\xf3\x18\vhttp_targetR\n" +
+	"httpTarget\x12Q\n" +
+	"\vgrpc_target\x18\n" +
+	" \x03(\v2\x10.internal.TargetB\x1e\xca\xf3\x18\vgrpc_target\xd2\xf3\x18\vgrpc_targetR\n" +
+	"grpcTarget\x12,\n" +
+	"\x06switch\x18\v \x01(\tB\x14\xca\xf3\x18\x06switch\xd2\xf3\x18\x06switchR\x06switch\x129\n" +
+	"\x04http\x18\f \x01(\v2\x0e.internal.HttpB\x10\xca\xf3\x18\x04http\xd2\xf3\x18\x04httpH\x02R\x04http\x88\x01\x01\x129\n" +
+	"\x04grpc\x18\r \x01(\v2\x0e.internal.GrpcB\x10\xca\xf3\x18\x04grpc\xd2\xf3\x18\x04grpcH\x03R\x04grpc\x88\x01\x01B\a\n" +
+	"\x05_authB\a\n" +
+	"\x05_rateB\a\n" +
+	"\x05_httpB\a\n" +
+	"\x05_grpc\"\xc2\x01\n" +
+	"\x04Http\x124\n" +
+	"\bprotocol\x18\x01 \x01(\tB\x18\xca\xf3\x18\bprotocol\xd2\xf3\x18\bprotocolR\bprotocol\x12,\n" +
+	"\x06method\x18\x02 \x01(\tB\x14\xca\xf3\x18\x06method\xd2\xf3\x18\x06methodR\x06method\x12$\n" +
+	"\x04path\x18\x03 \x01(\tB\x10\xca\xf3\x18\x04path\xd2\xf3\x18\x04pathR\x04path\x120\n" +
+	"\atimeout\x18\x04 \x01(\x03B\x16\xca\xf3\x18\atimeout\xd2\xf3\x18\atimeoutR\atimeout\"^\n" +
+	"\x04Grpc\x12$\n" +
+	"\x04path\x18\x01 \x01(\tB\x10\xca\xf3\x18\x04path\xd2\xf3\x18\x04pathR\x04path\x120\n" +
+	"\atimeout\x18\x02 \x01(\x03B\x16\xca\xf3\x18\atimeout\xd2\xf3\x18\atimeoutR\atimeout\"\x8e\x01\n" +
+	"\x06Target\x12 \n" +
+	"\x03uri\x18\x01 \x01(\tB\x0e\xca\xf3\x18\x03uri\xd2\xf3\x18\x03uriR\x03uri\x12,\n" +
+	"\x06weight\x18\x02 \x01(\x03B\x14\xca\xf3\x18\x06weight\xd2\xf3\x18\x06weightR\x06weight\x124\n" +
+	"\bpriority\x18\x03 \x01(\x03B\x18\xca\xf3\x18\bpriority\xd2\xf3\x18\bpriorityR\bpriority\"Z\n" +
+	"\x04Rate\x12(\n" +
+	"\x05limit\x18\x01 \x01(\x02B\x12\xca\xf3\x18\x05limit\xd2\xf3\x18\x05limitR\x05limit\x12(\n" +
+	"\x05burst\x18\x02 \x01(\x03B\x12\xca\xf3\x18\x05burst\xd2\xf3\x18\x05burstR\x05burst\"\x8a\x01\n" +
+	"\x11RegisterRouterReq\x12C\n" +
+	"\fregister_all\x18\x01 \x01(\bB \xca\xf3\x18\fregister_all\xd2\xf3\x18\fregister_allR\vregisterAll\x120\n" +
+	"\tendpoints\x18\x02 \x03(\v2\x12.internal.EndpointR\tendpoints\"\xa6\x01\n" +
+	"\x04Auth\x127\n" +
+	"\tauth_skip\x18\x01 \x01(\bB\x1a\xca\xf3\x18\tauth_skip\xd2\xf3\x18\tauth_skipR\bauthSkip\x12,\n" +
+	"\x06secret\x18\x02 \x01(\tB\x14\xca\xf3\x18\x06secret\xd2\xf3\x18\x06secretR\x06secret\x127\n" +
+	"\ttoken_key\x18\x03 \x01(\tB\x1a\xca\xf3\x18\ttoken_key\xd2\xf3\x18\ttoken_keyR\btokenKey\"e\n" +
+	"\x12RegisterRouterResp\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12!\n" +
+	"\fpayload_json\x18\x03 \x01(\tR\vpayloadJson2\xd4\x01\n" +
+	"\x0eInternalRouter\x12M\n" +
+	"\x06Invoke\x12\x13.internal.InvokeReq\x1a\x14.internal.InvokeResp\"\x18\x90\xb5\x18\x01\x82\xd3\xe4\x93\x02\x0e\x12\f/grpc/invoke\x12m\n" +
+	"\x0eRegisterRouter\x12\x1b.internal.RegisterRouterReq\x1a\x1c.internal.RegisterRouterResp\" \x90\xb5\x18\x02\x82\xd3\xe4\x93\x02\x16\x12\x14/app/register_router\x1a\x04\x88\xb5\x18\x01B\x1aZ\x18./gserver/invoke/api;apib\x06proto3"
 
 var (
 	file_gserver_invoke_api_router_proto_rawDescOnce sync.Once
@@ -182,21 +916,46 @@ func file_gserver_invoke_api_router_proto_rawDescGZIP() []byte {
 	return file_gserver_invoke_api_router_proto_rawDescData
 }
 
-var file_gserver_invoke_api_router_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_gserver_invoke_api_router_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_gserver_invoke_api_router_proto_goTypes = []any{
-	(*GenericRequest)(nil),  // 0: api.GenericRequest
-	(*GenericResponse)(nil), // 1: api.GenericResponse
-	nil,                     // 2: api.GenericRequest.HeadersEntry
+	(*InvokeReq)(nil),          // 0: internal.InvokeReq
+	(*InvokeResp)(nil),         // 1: internal.InvokeResp
+	(*Endpoint)(nil),           // 2: internal.Endpoint
+	(*Request)(nil),            // 3: internal.Request
+	(*Http)(nil),               // 4: internal.Http
+	(*Grpc)(nil),               // 5: internal.Grpc
+	(*Target)(nil),             // 6: internal.Target
+	(*Rate)(nil),               // 7: internal.Rate
+	(*RegisterRouterReq)(nil),  // 8: internal.RegisterRouterReq
+	(*Auth)(nil),               // 9: internal.Auth
+	(*RegisterRouterResp)(nil), // 10: internal.RegisterRouterResp
+	nil,                        // 11: internal.InvokeReq.HeadersEntry
+	nil,                        // 12: internal.Endpoint.RequestsEntry
 }
 var file_gserver_invoke_api_router_proto_depIdxs = []int32{
-	2, // 0: api.GenericRequest.headers:type_name -> api.GenericRequest.HeadersEntry
-	0, // 1: api.InternalRouter.Invoke:input_type -> api.GenericRequest
-	1, // 2: api.InternalRouter.Invoke:output_type -> api.GenericResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	11, // 0: internal.InvokeReq.headers:type_name -> internal.InvokeReq.HeadersEntry
+	9,  // 1: internal.Endpoint.auth:type_name -> internal.Auth
+	7,  // 2: internal.Endpoint.rate:type_name -> internal.Rate
+	6,  // 3: internal.Endpoint.http_target:type_name -> internal.Target
+	6,  // 4: internal.Endpoint.grpc_target:type_name -> internal.Target
+	12, // 5: internal.Endpoint.requests:type_name -> internal.Endpoint.RequestsEntry
+	9,  // 6: internal.Request.auth:type_name -> internal.Auth
+	7,  // 7: internal.Request.rate:type_name -> internal.Rate
+	6,  // 8: internal.Request.http_target:type_name -> internal.Target
+	6,  // 9: internal.Request.grpc_target:type_name -> internal.Target
+	4,  // 10: internal.Request.http:type_name -> internal.Http
+	5,  // 11: internal.Request.grpc:type_name -> internal.Grpc
+	2,  // 12: internal.RegisterRouterReq.endpoints:type_name -> internal.Endpoint
+	3,  // 13: internal.Endpoint.RequestsEntry.value:type_name -> internal.Request
+	0,  // 14: internal.InternalRouter.Invoke:input_type -> internal.InvokeReq
+	8,  // 15: internal.InternalRouter.RegisterRouter:input_type -> internal.RegisterRouterReq
+	1,  // 16: internal.InternalRouter.Invoke:output_type -> internal.InvokeResp
+	10, // 17: internal.InternalRouter.RegisterRouter:output_type -> internal.RegisterRouterResp
+	16, // [16:18] is the sub-list for method output_type
+	14, // [14:16] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_gserver_invoke_api_router_proto_init() }
@@ -204,13 +963,15 @@ func file_gserver_invoke_api_router_proto_init() {
 	if File_gserver_invoke_api_router_proto != nil {
 		return
 	}
+	file_gserver_invoke_api_router_proto_msgTypes[2].OneofWrappers = []any{}
+	file_gserver_invoke_api_router_proto_msgTypes[3].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gserver_invoke_api_router_proto_rawDesc), len(file_gserver_invoke_api_router_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

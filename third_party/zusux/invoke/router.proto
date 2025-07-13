@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package internal;
+package invoke;
 import "zusux/zrpc/zrpc.proto";
 import "zusux/tag/tag.proto";
 import "google/api/annotations.proto";
-option go_package = "./gserver/invoke/api;api";
+option go_package = "github.com/zusux/gokit/gserver/invoke/api;api";
 
 
 service InternalRouter {

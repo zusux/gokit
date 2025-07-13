@@ -15,13 +15,13 @@ init:
 	go install github.com/google/wire/cmd/wire@latest
 	go install github.com/zusux/gokit/gen/protoc-gen-tag@latest
 
+
 .PHONY: patch-zrpc
 patch-zrpc:
 	@echo "==> Copying zrpc.proto..."
 	@mkdir -p $(ZRPC_DST_DIR)
 	@cp $(ZRPC_SRC) $(ZRPC_DST)
 	@echo "==> Rewriting go_package in zrpc.proto..."
-	@sed -i.bak -E 's|option go_package = ".*";|option go_package = "$(MODULE)/gserver/zrpc;zrpc";|' $(ZRPC_DST)
 	@rm -f $(ZRPC_DST).bak
 
 .PHONY: gen-zrpc
@@ -58,19 +58,27 @@ gen-api:
 		--go_out=paths=source_relative:. \
 		--go-grpc_out=paths=source_relative:. \
 		--go-http_out=paths=source_relative:. \
+		--tag_out=. \
         --include_imports \
 		"{}"
 
 
 .PHONY: gen-router
 gen-router:
-	@echo "==> Patching go_package in router.proto..."
-	@protoc \
- 		--proto_path=. \
- 		--proto_path=./third_party \
- 		--go_out=paths=source_relative:. \
- 		--go-grpc_out=paths=source_relative:. \
- 		gserver/invoke/api/router.proto
+	@echo '==> Copying router.proto from third_party...'
+	mkdir -p api/invoke
+	cp third_party/zusux/invoke/router.proto api/invoke/router.proto
+	@echo '==> Patching go_package in router.proto...'
+	#sed -i.bak -E 's|option go_package = ".*";|option go_package = "$(MODULE)/api/invoke;invoke";|' api/invoke/router.proto
+	rm -f api/invoke/router.proto.bak
+	@echo '==> Generating invoke pb files...'
+	protoc \
+		--proto_path=. \
+		--proto_path=./third_party \
+		--go_out=paths=source_relative:. \
+		--go-grpc_out=paths=source_relative:. \
+		--tag_out=. \
+		api/invoke/router.proto
 
 .PHONY: api
 api: gen-zrpc gen-api

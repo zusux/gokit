@@ -6,6 +6,7 @@ import "zusux/tag/tag.proto";
 message User {
   string id = 1 [(tag.json) = "id", (tag.bson) = "_id",(tag.gorm) = "column:id"];
   string name = 2 [(tag.json) = "name", (tag.gorm) = "column:name"];
+  string age = 3 ;
 }
 
 message UserList {

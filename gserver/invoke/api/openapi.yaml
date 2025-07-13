@@ -3,8 +3,74 @@
 
 openapi: 3.0.3
 info:
-    title: ""
+    title: InternalRouter API
     version: 0.0.1
-paths: {}
+paths:
+    /app/register_router:
+        get:
+            tags:
+                - InternalRouter
+            operationId: InternalRouter_RegisterRouter
+            parameters:
+                - name: registerAll
+                  in: query
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/internal.RegisterRouterResp'
+    /grpc/invoke:
+        get:
+            tags:
+                - InternalRouter
+            operationId: InternalRouter_Invoke
+            parameters:
+                - name: serviceId
+                  in: query
+                  schema:
+                    type: integer
+                    format: uint32
+                - name: methodId
+                  in: query
+                  schema:
+                    type: integer
+                    format: uint32
+                - name: payloadJson
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/internal.InvokeResp'
 components:
-    schemas: {}
+    schemas:
+        internal.InvokeResp:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    format: int32
+                message:
+                    type: string
+                payloadJson:
+                    type: string
+        internal.RegisterRouterResp:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    format: int32
+                message:
+                    type: string
+                payloadJson:
+                    type: string
+tags:
+    - name: InternalRouter
