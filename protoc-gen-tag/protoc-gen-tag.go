@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 	"strings"
 
-	"github.com/zusux/gokit/gen/protoc-gen-tag/tag"
+	"github.com/zusux/gokit/protoc-gen-tag/tag"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -142,6 +142,9 @@ func fieldTypeWithTagSuffix(field *protogen.Field) string {
 
 	// Handle proto3 optional fields (which use synthetic oneof)
 	if field.Desc.HasPresence() && !(field.Oneof != nil && isSyntheticOneof(field)) {
+		return "*" + goFieldType(field)
+	}
+	if field.Desc.HasPresence() {
 		return "*" + goFieldType(field)
 	}
 	return goFieldType(field)
