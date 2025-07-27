@@ -1,7 +1,7 @@
 package redis
 
 type ConfigRedis struct {
-	Host string `yaml:"Host"`
-	Pass string `yaml:"Pass"`
-	Db   int    `yaml:"Db"`
+	Host string `yaml:"host"`
+	Pass string `yaml:"pass"`
+	Db   int    `yaml:"db"`
 }
