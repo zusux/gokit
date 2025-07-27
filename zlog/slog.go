@@ -17,7 +17,7 @@ type sLog struct {
 
 func NewSlog(log *zap.Logger) *sLog {
 	return &sLog{
-		log:    log,
+		log:    log.WithOptions(zap.AddCaller(), zap.AddCallerSkip(1)),
 		ctx:    context.Background(),
 		prefix: make([]any, 0),
 	}
@@ -56,7 +56,7 @@ func Context(ctx context.Context) *sLog {
 	name := tracing.TraceIdName
 	traceId := tracing.GetTraceIDFromCtx(ctx)
 	return &sLog{
-		log:    zap.L(),
+		log:    zap.L().WithOptions(zap.AddCaller(), zap.AddCallerSkip(1)),
 		ctx:    ctx,
 		prefix: []any{name, traceId},
 	}
