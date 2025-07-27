@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
+	"time"
 )
 
 type Logger struct {
@@ -47,14 +48,8 @@ func (l *Logger) InitLog() *zap.Logger {
 
 	// ========== 控制台输出 ==========
 	consoleEncoder := &encoder.AppPrefixEncoder{
-		App: l.App,
-		Encoder: zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-			TimeKey:     "time",
-			LevelKey:    "level",
-			MessageKey:  "msg",
-			EncodeTime:  zapcore.TimeEncoderOfLayout(l.TimestampFormat),
-			EncodeLevel: encoder.ColourEncodeLevel,
-		}),
+		App:     l.App,
+		Encoder: buildEncoder(l.LoggerFormat, l.TimestampFormat, true),
 	}
 	consoleCore := zapcore.NewCore(consoleEncoder, zapcore.AddSync(os.Stdout), level)
 	if l.WriteConsole {
@@ -65,22 +60,18 @@ func (l *Logger) InitLog() *zap.Logger {
 	if l.WriteFile {
 		_ = os.MkdirAll(l.Path, os.ModePerm)
 		fileEncoder := &encoder.AppPrefixEncoder{
-			App: l.App,
-			Encoder: zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-				TimeKey:     "time",
-				LevelKey:    "level",
-				MessageKey:  "msg",
-				EncodeTime:  zapcore.TimeEncoderOfLayout(l.TimestampFormat),
-				EncodeLevel: zapcore.CapitalLevelEncoder,
-			}),
+			App:     l.App,
+			Encoder: buildEncoder(l.LoggerFormat, l.TimestampFormat, false),
 		}
+		splitWrite := writer.NewDateSplitWriter(l.Path, l.File, l.Rotation)
+		splitWrite.StartCleaner(l.Age, time.Hour) // ✅ 启动后台定时清理任务
+		fileWriter := zapcore.AddSync(splitWrite)
 
-		fileWriter := zapcore.AddSync(writer.NewDateSplitWriter(l.Path, l.File))
 		fileCore := zapcore.NewCore(fileEncoder, fileWriter, level)
 		cores = append(cores, fileCore)
 
 		// 单独的 error 日志输出
-		errWriter := zapcore.AddSync(writer.NewDateSplitWriter(l.Path, l.ErrFile))
+		errWriter := zapcore.AddSync(writer.NewDateSplitWriter(l.Path, l.ErrFile, l.Rotation))
 		errLevel := zap.LevelEnablerFunc(func(l zapcore.Level) bool {
 			return l >= zapcore.ErrorLevel
 		})
@@ -96,4 +87,28 @@ func (l *Logger) InitLog() *zap.Logger {
 	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 	zap.ReplaceGlobals(logger)
 	return logger
+}
+
+func buildEncoder(format, tsFormat string, withColor bool) zapcore.Encoder {
+	cfg := zapcore.EncoderConfig{
+		TimeKey:    "time",
+		LevelKey:   "level",
+		MessageKey: "msg",
+		EncodeTime: zapcore.TimeEncoderOfLayout(tsFormat),
+	}
+
+	switch format {
+	case "json":
+		// JSON 格式不带颜色
+		cfg.EncodeLevel = zapcore.CapitalLevelEncoder
+		return zapcore.NewJSONEncoder(cfg)
+	default:
+		// Console 格式带颜色或不带颜色
+		if withColor {
+			cfg.EncodeLevel = encoder.ColourEncodeLevel
+		} else {
+			cfg.EncodeLevel = zapcore.CapitalLevelEncoder
+		}
+		return zapcore.NewConsoleEncoder(cfg)
+	}
 }
