@@ -9,7 +9,7 @@ import (
 
 func GetLogger() logger.Interface {
 	return logger.New(
-		zlog.NewSlog(zap.L()), // io writer
+		zlog.NewSlog(zap.L(), 2), // io writer
 		logger.Config{
 			SlowThreshold:             time.Second, // Slow SQL threshold
 			LogLevel:                  logger.Info, // Log level

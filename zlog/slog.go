@@ -15,9 +15,9 @@ type sLog struct {
 	ctx       context.Context
 }
 
-func NewSlog(log *zap.Logger) *sLog {
+func NewSlog(log *zap.Logger, callerSkip int) *sLog {
 	return &sLog{
-		log:    log.WithOptions(zap.AddCaller(), zap.AddCallerSkip(2)),
+		log:    log.WithOptions(zap.AddCaller(), zap.AddCallerSkip(callerSkip)),
 		ctx:    context.Background(),
 		prefix: make([]any, 0),
 	}
