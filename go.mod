@@ -9,13 +9,15 @@ require (
 	github.com/go-kratos/kratos/v2 v2.8.4
 	github.com/redis/go-redis/v9 v9.5.1
 	github.com/segmentio/kafka-go v0.4.47
+	github.com/shopspring/decimal v1.4.0
 	go.mongodb.org/mongo-driver v1.17.4
 	go.opentelemetry.io/otel/trace v1.35.0
 	go.uber.org/zap v1.27.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20240903143218-8af14fe29dc1
 	google.golang.org/grpc v1.69.0-dev
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.5.6
-	gorm.io/gorm v1.25.10
+	gorm.io/gorm v1.30.1
 )
 
 require (
@@ -34,7 +36,6 @@ require (
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
-	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
@@ -48,6 +49,5 @@ require (
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
 )

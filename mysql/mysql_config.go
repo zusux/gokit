@@ -25,7 +25,7 @@ type Mysql struct {
 	MaxIdleConn int    `yaml:"max_idle_conn" json:"max_idle_conn"`
 	Metric      bool   `yaml:"metric" json:"metric"`
 	Trace       bool   `yaml:"trace" json:"trace"`
-	Options     string `yaml:"options" yaml:"options"`
+	Options     string `yaml:"options" json:"options"`
 }
 
 func (m *Mysql) InitMysql() (*gorm.DB, error) {
@@ -62,11 +62,9 @@ func (m *Mysql) InitMysql() (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	sqlDB, err := db.DB()
+	_, err = db.DB()
 	if err != nil {
 		return nil, err
 	}
-	sqlDB.SetMaxOpenConns(m.MaxOpenConn)
-	sqlDB.SetMaxIdleConns(m.MaxIdleConn)
 	return db, nil
 }

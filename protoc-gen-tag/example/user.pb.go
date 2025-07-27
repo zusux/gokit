@@ -7,7 +7,7 @@
 package example
 
 import (
-	_ "github.com/zusux/gokit/gen/protoc-gen-tag/tag"
+	_ "github.com/zusux/gokit/protoc-gen-tag/tag"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
