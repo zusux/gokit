@@ -12,6 +12,10 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+const (
+	TraceIdName = "trace_id"
+)
+
 var globalRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func InjectTrace(ctx context.Context) (context.Context, trace.TraceID) {
@@ -23,7 +27,7 @@ func InjectTrace(ctx context.Context) (context.Context, trace.TraceID) {
 	// 2. 检查外部请求 trace_id
 	var traceID string
 	if tr, ok := transport.FromServerContext(ctx); ok {
-		traceID = tr.RequestHeader().Get("trace_id")
+		traceID = tr.RequestHeader().Get(TraceIdName)
 	}
 
 	// 3. 校验透传 trace_id
@@ -53,4 +57,12 @@ func generateSecureBytes(length int) []byte {
 		}
 	}
 	return b
+}
+
+func GetTraceIDFromCtx(ctx context.Context) string {
+	spanCtx := trace.SpanContextFromContext(ctx)
+	if !spanCtx.IsValid() {
+		return ""
+	}
+	return spanCtx.TraceID().String()
 }

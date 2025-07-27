@@ -2,13 +2,14 @@ package mlog
 
 import (
 	"github.com/zusux/gokit/zlog"
+	"go.uber.org/zap"
 	"gorm.io/gorm/logger"
 	"time"
 )
 
 func GetLogger() logger.Interface {
 	return logger.New(
-		zlog.NewSlog(), // io writer
+		zlog.NewSlog(zap.L()), // io writer
 		logger.Config{
 			SlowThreshold:             time.Second, // Slow SQL threshold
 			LogLevel:                  logger.Info, // Log level
