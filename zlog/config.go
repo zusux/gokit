@@ -49,6 +49,7 @@ func (l *Logger) InitLog() *zap.Logger {
 	// ========== 控制台输出 ==========
 	consoleEncoder := &encoder.AppPrefixEncoder{
 		App:     l.App,
+		Format:  l.LoggerFormat,
 		Encoder: buildEncoder(l.LoggerFormat, l.TimestampFormat, true),
 	}
 	consoleCore := zapcore.NewCore(consoleEncoder, zapcore.AddSync(os.Stdout), level)
@@ -61,6 +62,7 @@ func (l *Logger) InitLog() *zap.Logger {
 		_ = os.MkdirAll(l.Path, os.ModePerm)
 		fileEncoder := &encoder.AppPrefixEncoder{
 			App:     l.App,
+			Format:  l.LoggerFormat,
 			Encoder: buildEncoder(l.LoggerFormat, l.TimestampFormat, false),
 		}
 		splitWrite := writer.NewDateSplitWriter(l.Path, l.File, l.Rotation)
