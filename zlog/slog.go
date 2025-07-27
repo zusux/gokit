@@ -27,26 +27,26 @@ func (s *sLog) Debugf(format string, args ...interface{}) {
 }
 
 func (s *sLog) Printf(format string, args ...interface{}) {
-	s.log.Sugar().Infof(format, args...)
+	s.log.Sugar().With(s.prefix...).Infof(format, args...)
 }
 
 func (s *sLog) Infof(format string, args ...interface{}) {
-	s.log.Sugar().Infof(format, args...)
+	s.log.Sugar().With(s.prefix...).Infof(format, args...)
 }
 func (s *sLog) Warnf(format string, args ...interface{}) {
-	s.log.Sugar().Warnf(format, args...)
+	s.log.Sugar().With(s.prefix...).Warnf(format, args...)
 }
 func (s *sLog) Errorf(format string, args ...interface{}) {
-	s.log.Sugar().Errorf(format, args...)
+	s.log.Sugar().With(s.prefix...).Errorf(format, args...)
 }
 func (s *sLog) Panicf(format string, args ...interface{}) {
-	s.log.Sugar().Panicf(format, args...)
+	s.log.Sugar().With(s.prefix...).Panicf(format, args...)
 }
 func (s *sLog) Fatalf(format string, args ...interface{}) {
-	s.log.Sugar().Fatalf(format, args...)
+	s.log.Sugar().With(s.prefix...).Fatalf(format, args...)
 }
 func (s *sLog) Log(level log.Level, keyvals ...any) error {
-	s.log.Sugar().Log(zapcore.Level(level), keyvals...)
+	s.log.Sugar().With(s.prefix...).Log(zapcore.Level(level), keyvals...)
 	return nil
 }
 
