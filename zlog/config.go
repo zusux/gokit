@@ -18,7 +18,7 @@ type Logger struct {
 	LoggerFormat    string `yaml:"logger_format" json:"logger_format"`       //json
 }
 
-func (l *Logger) InitLog() {
+func (l *Logger) InitLog() *zap.Logger {
 	defaultConf := Logger{
 		Path:            "logs",
 		File:            "out.log",
@@ -60,4 +60,5 @@ func (l *Logger) InitLog() {
 	// 创建 Logger
 	logger := zap.New(core, zap.AddCaller())
 	zap.ReplaceGlobals(logger)
+	return logger
 }
