@@ -11,8 +11,8 @@ import (
 )
 
 type ConfigMysql struct {
-	Enable  bool             `yaml:"enable" json:"enable"`
-	Mapping map[string]Mysql `yaml:"mapping" json:"mapping"`
+	Enable      bool  `yaml:"enable" json:"enable"`
+	MysqlConfig Mysql `yaml:"mysql_config" json:"mysql_config"`
 }
 
 type Mysql struct {

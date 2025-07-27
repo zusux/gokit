@@ -5,18 +5,10 @@ import (
 	"gorm.io/gorm"
 )
 
-var mysqlClientMapping = map[string]*gorm.DB{} // 用于存储 mysql 连接 初始化后只读
-
-func (c *ConfigMysql) InitMysql() {
-	for k, v := range c.Mapping {
-		db, err := v.InitMysql()
-		if err != nil {
-			zlog.Fatalf("mysql init failed: %v", err)
-		}
-		mysqlClientMapping[k] = db
+func (c *ConfigMysql) InitMysql() *gorm.DB {
+	db, err := c.MysqlConfig.InitMysql()
+	if err != nil {
+		zlog.Fatalf("mysql init failed: %v", err)
 	}
-}
-
-func GetMysqlClient(name string) *gorm.DB {
-	return mysqlClientMapping[name]
+	return db
 }

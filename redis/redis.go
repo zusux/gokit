@@ -7,12 +7,12 @@ import (
 )
 
 type ClientRedis struct {
-	config *ConfigRedis
+	Config *ConfigRedis
 }
 
 func NewRedisClient(config *ConfigRedis) *ClientRedis {
 	return &ClientRedis{
-		config: config,
+		Config: config,
 	}
 }
 
@@ -31,9 +31,9 @@ func (r *ClientRedis) splitClusterAddrs(addr string) []string {
 
 func (r *ClientRedis) GetClient() *redis.Client {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     r.config.Host,
-		Password: r.config.Pass,
-		DB:       r.config.Db,
+		Addr:     r.Config.Host,
+		Password: r.Config.Pass,
+		DB:       r.Config.Db,
 	})
 	return rdb
 }
@@ -41,16 +41,16 @@ func (r *ClientRedis) GetClient() *redis.Client {
 func (r *ClientRedis) GetSentinelClient(masterName string) *redis.Client {
 	rdb := redis.NewFailoverClient(&redis.FailoverOptions{
 		MasterName:    masterName,
-		SentinelAddrs: r.splitClusterAddrs(r.config.Host),
-		Password:      r.config.Pass,
-		DB:            r.config.Db,
+		SentinelAddrs: r.splitClusterAddrs(r.Config.Host),
+		Password:      r.Config.Pass,
+		DB:            r.Config.Db,
 	})
 	return rdb
 }
 
 func (r *ClientRedis) GetClusterClient() *redis.ClusterClient {
 	return redis.NewClusterClient(&redis.ClusterOptions{
-		Addrs:    r.splitClusterAddrs(r.config.Host),
-		Password: r.config.Pass,
+		Addrs:    r.splitClusterAddrs(r.Config.Host),
+		Password: r.Config.Pass,
 	})
 }

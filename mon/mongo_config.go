@@ -1,6 +1,6 @@
 package mon
 
 type ConfigMongo struct {
-	Enable  bool              `yaml:"enable" json:"enable"`
-	Mapping map[string]string `yaml:"mapping" json:"mapping"`
+	Enable bool   `yaml:"enable" json:"enable"`
+	Uri    string `yaml:"uri" json:"uri"`
 }
