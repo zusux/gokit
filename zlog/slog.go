@@ -2,6 +2,7 @@ package zlog
 
 import (
 	"context"
+	"github.com/go-kratos/kratos/v2/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -42,7 +43,7 @@ func (s *sLog) Panicf(format string, args ...interface{}) {
 func (s *sLog) Fatalf(format string, args ...interface{}) {
 	zap.S().Fatalf(format, args...)
 }
-func (s *sLog) Log(level int8, keyvals ...any) error {
+func (s *sLog) Log(level log.Level, keyvals ...any) error {
 	zap.S().Log(zapcore.Level(level), keyvals...)
 	return nil
 }
