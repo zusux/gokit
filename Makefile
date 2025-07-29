@@ -58,28 +58,22 @@ gen-api:
 		--go_out=paths=source_relative:. \
 		--go-grpc_out=paths=source_relative:. \
 		--go-http_out=paths=source_relative:. \
-		--tag_out=. \
         --include_imports \
 		"{}"
 
 
-.PHONY: gen-router
-gen-router:
-	@echo '==> Copying router.proto from third_party...'
-	mkdir -p api/invoke
-	cp third_party/zusux/invoke/router.proto api/invoke/router.proto
-	@echo '==> Patching go_package in router.proto...'
-	#sed -i.bak -E 's|option go_package = ".*";|option go_package = "$(MODULE)/api/invoke;invoke";|' api/invoke/router.proto
-	rm -f api/invoke/router.proto.bak
-	@echo '==> Generating invoke pb files...'
-	protoc \
+.PHONY: gen-tag
+gen-tag:
+	@echo "==> Generating tag structs..."
+	@find api -name '*.proto' -print0 | \
+	xargs -0 -I{} protoc \
 		--proto_path=. \
 		--proto_path=./third_party \
-		--go_out=paths=source_relative:. \
-		--go-grpc_out=paths=source_relative:. \
-		--tag_out=. \
-		api/invoke/router.proto
+		--tag_out=fix_json_tag=false:. \
+		"{}"
+
+
 
 .PHONY: api
-api: gen-zrpc gen-api
+api: gen-zrpc gen-api gen-tag
 

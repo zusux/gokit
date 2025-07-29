@@ -6,6 +6,8 @@ package main
 import (
 	"fmt"
 	"google.golang.org/protobuf/types/pluginpb"
+	"os"
+	"regexp"
 	"strings"
 
 	"github.com/zusux/gokit/protoc-gen-tag/tag"
@@ -18,18 +20,29 @@ import (
 
 func main() {
 	protogen.Options{}.Run(func(plugin *protogen.Plugin) error {
+		//params := plugin.Request.GetParameter() // 例如 "fix_json_tag=true"
+		params := plugin.Request.GetParameter() // string like: "fix_json_tag=true"
+		fixJsonTag := false
+		for _, param := range strings.Split(params, ",") {
+			if strings.TrimSpace(param) == "fix_json_tag=true" {
+				fixJsonTag = true
+			}
+		}
 		plugin.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 		for _, f := range plugin.Files {
 			if !f.Generate {
 				continue
 			}
-			generateFile(plugin, f)
+			err := generateFile(plugin, f, fixJsonTag)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})
 }
 
-func generateFile(plugin *protogen.Plugin, file *protogen.File) {
+func generateFile(plugin *protogen.Plugin, file *protogen.File, fixJsonTag bool) error {
 	filename := file.GeneratedFilenamePrefix + ".tag.go"
 	g := plugin.NewGeneratedFile(filename, file.GoImportPath)
 
@@ -42,6 +55,21 @@ func generateFile(plugin *protogen.Plugin, file *protogen.File) {
 		GenerateToTagFunc(g, message)
 		GenerateFromTagFunc(g, message)
 	}
+
+	if fixJsonTag {
+		originPb := file.GeneratedFilenamePrefix + ".pb.go"
+		content, err := os.ReadFile(originPb)
+		if err != nil {
+			return fmt.Errorf("read file %s failed: %w", originPb, err)
+		}
+
+		newContent := ReplaceJsonTag(string(content))
+
+		if err := os.WriteFile(originPb, []byte(newContent), 0644); err != nil {
+			return fmt.Errorf("write file %s failed: %w", originPb, err)
+		}
+	}
+	return nil
 }
 
 func buildTag(field *protogen.Field) string {
@@ -230,4 +258,17 @@ func isSyntheticOneof(field *protogen.Field) bool {
 	// 检查 oneof 是否只包含一个字段
 	oneofDesc := field.Oneof.Desc
 	return oneofDesc.Fields().Len() == 1
+}
+
+func ReplaceJsonTag(content string) string {
+	re := regexp.MustCompile(`protobuf:"[^"]*name=([a-zA-Z0-9_]+),json=([a-zA-Z0-9_]+),?`)
+	return re.ReplaceAllStringFunc(content, func(m string) string {
+		sub := re.FindStringSubmatch(m)
+		if len(sub) < 3 {
+			return m
+		}
+		name := sub[1] // e.g., captcha_id
+		// 替换 json=xxx 为 json=name
+		return strings.Replace(m, "json="+sub[2], "json="+name, 1)
+	})
 }
