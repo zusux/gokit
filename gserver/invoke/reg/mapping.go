@@ -5,24 +5,36 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/zusux/gokit/gserver/invoke/api"
 	"github.com/zusux/gokit/gserver/zrpc"
 	"github.com/zusux/gokit/zlog"
+	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"reflect"
 	"strings"
+	"sync"
 )
 
+var mu sync.Mutex
+var r = -1
 var methodHandlers = make(map[uint32]func(context.Context, json.RawMessage) (interface{}, error))
 
 func GetHandler(fullId uint32) (func(context.Context, json.RawMessage) (interface{}, error), bool) {
+	if r == -1 {
+		return nil, false
+	}
 	h, ok := methodHandlers[fullId]
 	return h, ok
 }
-func AutoRegisterGRPCServiceMethods(descProto []byte, impls ...any) error {
+func AutoRegisterGRPCServiceMethods(descProto []byte, impls ...any) (map[uint32]*api.Endpoint, error) {
+	defer func() {
+		r = 0
+	}()
 	var err error
+	ret := make(map[uint32]*api.Endpoint, 0)
 	for _, impl := range impls {
 		// step1: 提取实际实现的方法名称与参数类型
 		typeMap := ExtractMethodParamTypes(impl)
@@ -31,7 +43,28 @@ func AutoRegisterGRPCServiceMethods(descProto []byte, impls ...any) error {
 		// 假设服务名为 user.v1.UserSrv
 		serviceName := ExtractServiceFullNameFromImplByMatch(descProto, impl) // 比如 "user.v1.UserSrv"
 		serviceID := GetServiceIDFromDescriptor(descProto, serviceName)       // 例如 0x1001
-
+		endpoint, ok := ret[serviceID]
+		if !ok {
+			endpoint = &api.Endpoint{
+				App:       "",
+				ServiceId: serviceID,
+				Host:      "",
+				Auth: &api.Auth{
+					AuthSkip: false,
+					Secret:   "",
+					TokenKey: "",
+				},
+				AllowOrigin: "*",
+				Rate: &api.Rate{
+					Limit: 0,
+					Burst: 0,
+				},
+				Timeout:    3000,
+				HttpTarget: make([]*api.Target, 0),
+				GrpcTarget: make([]*api.Target, 0),
+				Requests:   make(map[string]*api.Request),
+			}
+		}
 		// 构建 user.v1.UserSrv.Ping → 入参类型
 		fullMap := make(map[string]any)
 		for method, param := range typeMap {
@@ -39,12 +72,14 @@ func AutoRegisterGRPCServiceMethods(descProto []byte, impls ...any) error {
 			fullMap[key] = param
 		}
 
-		e := RegisterFromDescriptor(descProto, impl, serviceID, fullMap)
+		e := RegisterFromDescriptor(descProto, impl, serviceID, fullMap, endpoint)
 		if e != nil {
-			errors.Join(err, e)
+			err = errors.Join(err, e)
+		} else {
+			ret[serviceID] = endpoint
 		}
 	}
-	return err
+	return ret, err
 }
 
 func ExtractMethodParamTypes(impl any) map[string]any {
@@ -116,7 +151,7 @@ func GetServiceIDFromDescriptor(desc []byte, serviceName string) uint32 {
 }
 
 // RegisterFromDescriptor 读取 descriptor 文件，根据服务映射注册方法处理器
-func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, methodTypeMap map[string]any) error {
+func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, methodTypeMap map[string]any, endpoint *api.Endpoint) error {
 
 	fds := &descriptorpb.FileDescriptorSet{}
 	if err := proto.Unmarshal(desc, fds); err != nil {
@@ -146,6 +181,32 @@ func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, meth
 					zlog.Printf("warn: no method_id for %s.%s\n", serviceFullName, methodName)
 					continue
 				}
+				ext := proto.GetExtension(opts, zrpc.E_MethodOptionHttpApi)
+				httpServerFullName := strings.Split(strings.Trim(serviceFullName, "/ "), ".")
+				httpServer := httpServerFullName[0]
+				httpMethod := ""
+				httpRouter := ""
+				outerRouter := strings.ToLower(httpServer) + "-" + strings.ToLower(methodName)
+				if httpRule, ok := ext.(*annotations.HttpRule); ok {
+					switch pattern := httpRule.Pattern.(type) {
+					case *annotations.HttpRule_Get:
+						httpMethod = "GET"
+						httpRouter = pattern.Get
+					case *annotations.HttpRule_Post:
+						httpMethod = "POST"
+						httpRouter = pattern.Post
+					case *annotations.HttpRule_Put:
+						httpMethod = "Put"
+						httpRouter = pattern.Put
+					case *annotations.HttpRule_Delete:
+						httpMethod = "Delete"
+						httpRouter = pattern.Delete
+					case *annotations.HttpRule_Patch:
+						httpMethod = "Patch"
+						httpRouter = pattern.Patch
+					}
+				}
+
 				methodKey := fmt.Sprintf("%s.%s", serviceFullName, methodName)
 				reqPrototype, ok := methodTypeMap[methodKey]
 				if !ok {
@@ -153,8 +214,37 @@ func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, meth
 					continue
 				}
 
+				endpoint.Requests[outerRouter] = &api.Request{
+					Router:  outerRouter,
+					Methods: []string{httpMethod},
+					Auth: &api.Auth{
+						AuthSkip: false,
+						Secret:   "",
+						TokenKey: "",
+					},
+					AllowOrigin: "*",
+					Timeout:     3000,
+					MethodId:    methodID,
+					Rate: &api.Rate{
+						Limit: 0,
+						Burst: 0,
+					},
+					Robin:      "simple",
+					HttpTarget: make([]*api.Target, 0),
+					GrpcTarget: make([]*api.Target, 0),
+					Switch:     "http",
+					Http: &api.Http{
+						Protocol: "http",
+						Method:   httpMethod,
+						Path:     httpRouter,
+						Timeout:  3000,
+					},
+					Grpc: &api.Grpc{
+						Path:    methodKey,
+						Timeout: 3000,
+					},
+				}
 				fullID := serviceID<<16 | methodID
-
 				RegisterAutoMethod(fullID, serviceImpl, methodName, reqPrototype)
 				zlog.Infof("✅ Registered %s as 0x%08X\n", methodKey, fullID)
 			}
@@ -197,7 +287,9 @@ func RegisterAutoMethod(methodID uint32, impl any, methodName string, reqPrototy
 	}
 
 	// 注册
+	mu.Lock()
 	methodHandlers[methodID] = handler
+	mu.Unlock()
 }
 
 // 使用方式：
