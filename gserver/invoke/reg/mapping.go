@@ -29,7 +29,7 @@ func GetHandler(fullId uint32) (func(context.Context, json.RawMessage) (interfac
 	h, ok := methodHandlers[fullId]
 	return h, ok
 }
-func AutoRegisterGRPCServiceMethods(descProto []byte, impls ...any) (map[uint32]*api.Endpoint, error) {
+func AutoRegisterGRPCServiceMethods(descProto []byte, auth *api.Auth, httpTarget, grpcTarget []*api.Target, timeOut int64, impls ...any) (map[uint32]*api.Endpoint, error) {
 	defer func() {
 		r = 0
 	}()
@@ -46,22 +46,18 @@ func AutoRegisterGRPCServiceMethods(descProto []byte, impls ...any) (map[uint32]
 		endpoint, ok := ret[serviceID]
 		if !ok {
 			endpoint = &api.Endpoint{
-				App:       "",
-				ServiceId: serviceID,
-				Host:      "",
-				Auth: &api.Auth{
-					AuthSkip: false,
-					Secret:   "",
-					TokenKey: "",
-				},
+				App:         "",
+				ServiceId:   serviceID,
+				Host:        "",
+				Auth:        auth,
 				AllowOrigin: "*",
 				Rate: &api.Rate{
 					Limit: 0,
 					Burst: 0,
 				},
-				Timeout:    3000,
-				HttpTarget: make([]*api.Target, 0),
-				GrpcTarget: make([]*api.Target, 0),
+				Timeout:    timeOut,
+				HttpTarget: httpTarget,
+				GrpcTarget: grpcTarget,
 				Requests:   make(map[string]*api.Request),
 			}
 		}
@@ -72,7 +68,7 @@ func AutoRegisterGRPCServiceMethods(descProto []byte, impls ...any) (map[uint32]
 			fullMap[key] = param
 		}
 
-		e := RegisterFromDescriptor(descProto, impl, serviceID, fullMap, endpoint)
+		e := RegisterFromDescriptor(descProto, impl, serviceID, timeOut, fullMap, endpoint)
 		if e != nil {
 			err = errors.Join(err, e)
 		} else {
@@ -151,7 +147,7 @@ func GetServiceIDFromDescriptor(desc []byte, serviceName string) uint32 {
 }
 
 // RegisterFromDescriptor 读取 descriptor 文件，根据服务映射注册方法处理器
-func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, methodTypeMap map[string]any, endpoint *api.Endpoint) error {
+func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, timeout int64, methodTypeMap map[string]any, endpoint *api.Endpoint) error {
 
 	fds := &descriptorpb.FileDescriptorSet{}
 	if err := proto.Unmarshal(desc, fds); err != nil {
@@ -181,12 +177,11 @@ func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, meth
 					zlog.Printf("warn: no method_id for %s.%s\n", serviceFullName, methodName)
 					continue
 				}
-				ext := proto.GetExtension(opts, zrpc.E_MethodOptionHttpApi)
+				ext := proto.GetExtension(opts, annotations.E_Http)
 				httpServerFullName := strings.Split(strings.Trim(serviceFullName, "/ "), ".")
 				httpServer := httpServerFullName[0]
 				httpMethod := ""
 				httpRouter := ""
-				outerRouter := strings.ToLower(httpServer) + "-" + strings.ToLower(methodName)
 				if httpRule, ok := ext.(*annotations.HttpRule); ok {
 					switch pattern := httpRule.Pattern.(type) {
 					case *annotations.HttpRule_Get:
@@ -206,7 +201,7 @@ func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, meth
 						httpRouter = pattern.Patch
 					}
 				}
-
+				outerRouter := strings.ToLower(httpServer) + "/" + httpRouter
 				methodKey := fmt.Sprintf("%s.%s", serviceFullName, methodName)
 				reqPrototype, ok := methodTypeMap[methodKey]
 				if !ok {
@@ -215,15 +210,11 @@ func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, meth
 				}
 
 				endpoint.Requests[outerRouter] = &api.Request{
-					Router:  outerRouter,
-					Methods: []string{httpMethod},
-					Auth: &api.Auth{
-						AuthSkip: false,
-						Secret:   "",
-						TokenKey: "",
-					},
+					Router:      outerRouter,
+					Methods:     []string{httpMethod},
+					Auth:        nil,
 					AllowOrigin: "*",
-					Timeout:     3000,
+					Timeout:     timeout,
 					MethodId:    methodID,
 					Rate: &api.Rate{
 						Limit: 0,
@@ -237,11 +228,11 @@ func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, meth
 						Protocol: "http",
 						Method:   httpMethod,
 						Path:     httpRouter,
-						Timeout:  3000,
+						Timeout:  timeout,
 					},
 					Grpc: &api.Grpc{
 						Path:    methodKey,
-						Timeout: 3000,
+						Timeout: timeout,
 					},
 				}
 				fullID := serviceID<<16 | methodID
