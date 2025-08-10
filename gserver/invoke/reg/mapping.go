@@ -201,7 +201,13 @@ func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, time
 						httpRouter = pattern.Patch
 					}
 				}
-				outerRouter := strings.ToLower(httpServer) + "/" + httpRouter
+				var outerRouter string
+				if strings.HasPrefix(httpRouter, "/") {
+					outerRouter = strings.ToLower(httpServer) + httpRouter
+				} else {
+					outerRouter = strings.ToLower(httpServer) + "/" + httpRouter
+				}
+
 				methodKey := fmt.Sprintf("%s.%s", serviceFullName, methodName)
 				reqPrototype, ok := methodTypeMap[methodKey]
 				if !ok {
