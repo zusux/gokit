@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strings"
+	"sync"
+
 	"github.com/zusux/gokit/gserver/invoke/api"
 	"github.com/zusux/gokit/gserver/zrpc"
 	"github.com/zusux/gokit/zlog"
@@ -13,9 +17,6 @@ import (
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
-	"reflect"
-	"strings"
-	"sync"
 )
 
 var mu sync.Mutex
@@ -29,7 +30,7 @@ func GetHandler(fullId uint32) (func(context.Context, json.RawMessage) (interfac
 	h, ok := methodHandlers[fullId]
 	return h, ok
 }
-func AutoRegisterGRPCServiceMethods(descProto []byte, auth *api.Auth, httpTarget, grpcTarget []*api.Target, timeOut int64, impls ...any) (map[uint32]*api.Endpoint, error) {
+func AutoRegisterGRPCServiceMethods(descProto []byte, app string, auth *api.Auth, httpTarget, grpcTarget []*api.Target, timeOut int64, impls ...any) (map[uint32]*api.Endpoint, error) {
 	defer func() {
 		r = 0
 	}()
@@ -46,14 +47,14 @@ func AutoRegisterGRPCServiceMethods(descProto []byte, auth *api.Auth, httpTarget
 		endpoint, ok := ret[serviceID]
 		if !ok {
 			endpoint = &api.Endpoint{
-				App:         "",
+				App:         app,
 				ServiceId:   serviceID,
 				Host:        "",
 				Auth:        auth,
 				AllowOrigin: "*",
 				Rate: &api.Rate{
-					Limit: 0,
-					Burst: 0,
+					Limit: 100000,
+					Burst: 100000,
 				},
 				Timeout:    timeOut,
 				HttpTarget: httpTarget,
@@ -203,9 +204,9 @@ func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, time
 				}
 				var outerRouter string
 				if strings.HasPrefix(httpRouter, "/") {
-					outerRouter = strings.ToLower(httpServer) + httpRouter
+					outerRouter = "/" + strings.ToLower(httpServer) + httpRouter
 				} else {
-					outerRouter = strings.ToLower(httpServer) + "/" + httpRouter
+					outerRouter = "/" + strings.ToLower(httpServer) + "/" + httpRouter
 				}
 
 				methodKey := fmt.Sprintf("%s.%s", serviceFullName, methodName)
@@ -223,8 +224,8 @@ func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, time
 					Timeout:     timeout,
 					MethodId:    methodID,
 					Rate: &api.Rate{
-						Limit: 0,
-						Burst: 0,
+						Limit: 100000,
+						Burst: 100000,
 					},
 					Robin:      "simple",
 					HttpTarget: make([]*api.Target, 0),
