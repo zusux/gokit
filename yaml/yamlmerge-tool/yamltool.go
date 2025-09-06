@@ -6,37 +6,42 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/zusux/gokit/yaml/yamlmerge"
 )
 
 func main() {
 	// 命令行参数
-	varsURL := flag.String("vars", "", "远程 vars.yaml URL")
+	varsPath := flag.String("vars", "", "远程 vars.yaml URL")
 	tmplPath := flag.String("tmpl", "./configs/config-tpl.yaml", "本地 template.yaml 路径")
 	outPath := flag.String("out", "./configs/config.yaml", "输出的 config.yaml 路径")
 
 	flag.Parse()
 
-	if *varsURL == "" {
+	if *varsPath == "" {
 		fmt.Println("❌ 错误: 必须指定 --vars 参数")
 		os.Exit(1)
 	}
-
-	// 下载远程 vars.yaml
-	resp, err := http.Get(*varsURL)
-	if err != nil {
-		panic(fmt.Errorf("下载 vars.yaml 失败: %w", err))
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		panic(fmt.Errorf("下载失败，HTTP 状态码: %d", resp.StatusCode))
-	}
-
-	vars, err := io.ReadAll(resp.Body)
-	if err != nil {
-		panic(fmt.Errorf("读取 vars.yaml 内容失败: %w", err))
+	var vars []byte
+	var err error
+	if strings.HasPrefix(*varsPath, "http://") || strings.HasPrefix(*varsPath, "https://") {
+		// HTTP 下载
+		resp, err := http.Get(*varsPath)
+		if err != nil {
+			panic(err)
+		}
+		defer resp.Body.Close()
+		vars, err = io.ReadAll(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		// 本地文件
+		vars, err = os.ReadFile(*varsPath)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// 读取本地 template.yaml
