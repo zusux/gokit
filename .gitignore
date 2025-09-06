@@ -1,0 +1,1 @@
+# git tag | Where-Object { $_ -like "v0.2.*" } | ForEach-Object { git tag -d $_ }
