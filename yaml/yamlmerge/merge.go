@@ -4,58 +4,72 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
-// MergeWithRegex 替换模板中的 ${VAR}，保留注释和缩进
+// MergeWithRegex 替换模板中的 ${VAR}，保留注释和顺序
 func MergeWithRegex(template string, varsYAML []byte) (string, error) {
-	// 解析 vars.yaml
+	var templateNode yaml.Node
+	if err := yaml.Unmarshal([]byte(template), &templateNode); err != nil {
+		return "", fmt.Errorf("parse template yaml: %w", err)
+	}
+
 	var varsNode yaml.Node
 	if err := yaml.Unmarshal(varsYAML, &varsNode); err != nil {
 		return "", fmt.Errorf("parse vars yaml: %w", err)
 	}
 
-	// 扁平化 vars Node
 	flatVars := make(map[string]*yaml.Node)
 	if len(varsNode.Content) > 0 {
 		flattenVars(varsNode.Content[0], "", flatVars)
 	}
 
-	// 正则匹配模板中的 ${VAR}
-	re := regexp.MustCompile(`\$\{([A-Za-z0-9_.]+)\}`)
-	lines := strings.Split(template, "\n")
-	for i, line := range lines {
-		lines[i] = re.ReplaceAllStringFunc(line, func(s string) string {
-			key := re.FindStringSubmatch(s)[1]
-			valNode, ok := flatVars[key]
-			if !ok {
-				return s
-			}
-
-			indent := getLineIndent(line)
-			headComment := ""
-
-			if valNode.HeadComment != "" {
-				for _, c := range strings.Split(valNode.HeadComment, "\n") {
-					headComment += strings.Repeat("  ", indent) + "# " + c + "\n"
-				}
-			}
-
-			var valStr string
-			if valNode.Kind == yaml.ScalarNode {
-				valStr = nodeToYAMLStringWithLineComment(valNode, indent)
-				return headComment + valStr
-			} else {
-				// Sequence 或 Mapping
-				valStr = nodeToYAMLStringOnlyValue(valNode, indent+1)
-				return headComment + "\n" + valStr
-			}
-		})
+	// 递归替换模板 Node
+	if err := replaceNode(templateNode.Content[0], flatVars); err != nil {
+		return "", err
 	}
 
-	return strings.Join(lines, "\n"), nil
+	// 序列化回 YAML，保留注释
+	out := &bytes.Buffer{}
+	enc := yaml.NewEncoder(out)
+	enc.SetIndent(2)
+	if err := enc.Encode(templateNode.Content[0]); err != nil {
+		return "", fmt.Errorf("encode yaml: %w", err)
+	}
+
+	return out.String(), nil
+}
+
+// replaceNode 递归替换节点中 ${VAR} 占位符
+func replaceNode(node *yaml.Node, vars map[string]*yaml.Node) error {
+	re := regexp.MustCompile(`\$\{([A-Za-z0-9_.]+)\}`)
+
+	switch node.Kind {
+	case yaml.ScalarNode:
+		matches := re.FindStringSubmatch(node.Value)
+		if len(matches) == 2 {
+			key := matches[1]
+			valNode, ok := vars[key]
+			if !ok {
+				return nil
+			}
+			// 用 vars 节点替换当前节点
+			node.Kind = valNode.Kind
+			node.Tag = valNode.Tag
+			node.Value = valNode.Value
+			node.Content = valNode.Content
+			node.HeadComment = valNode.HeadComment
+			node.LineComment = valNode.LineComment
+		}
+	case yaml.MappingNode, yaml.SequenceNode:
+		for _, child := range node.Content {
+			if err := replaceNode(child, vars); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // flattenVars 扁平化 vars Node
@@ -79,65 +93,8 @@ func flattenVars(node *yaml.Node, prefix string, out map[string]*yaml.Node) {
 			flattenVars(item, key, out)
 		}
 	case yaml.ScalarNode:
-		out[prefix] = node
-	}
-}
-
-// 标量节点 + 行内注释
-func nodeToYAMLStringWithLineComment(node *yaml.Node, indent int) string {
-	indentStr := strings.Repeat("  ", indent)
-	val := node.Value
-	if node.LineComment != "" {
-		val += " " + node.LineComment
-	}
-	return indentStr + val
-}
-
-// 序列或映射只序列化值部分，不包含模板 key
-func nodeToYAMLStringOnlyValue(node *yaml.Node, indent int) string {
-	indentStr := strings.Repeat("  ", indent)
-	var buf bytes.Buffer
-
-	switch node.Kind {
-	case yaml.ScalarNode:
-		val := node.Value
-		if node.LineComment != "" {
-			val += " " + node.LineComment
-		}
-		buf.WriteString(indentStr + val)
-	case yaml.SequenceNode:
-		for _, item := range node.Content {
-			if item.Kind == yaml.ScalarNode {
-				buf.WriteString(indentStr + "- " + item.Value)
-				if item.LineComment != "" {
-					buf.WriteString(" " + item.LineComment)
-				}
-				buf.WriteString("\n")
-			} else {
-				// 嵌套 Sequence/Mapping
-				buf.WriteString(indentStr + "- " + "\n" + nodeToYAMLStringOnlyValue(item, indent+1) + "\n")
-			}
-		}
-	case yaml.MappingNode:
-		for i := 0; i < len(node.Content); i += 2 {
-			k := node.Content[i]
-			v := node.Content[i+1]
-			buf.WriteString(fmt.Sprintf("%s%s: %s\n", indentStr, k.Value, nodeToYAMLStringOnlyValue(v, indent+1)))
+		if prefix != "" {
+			out[prefix] = node
 		}
 	}
-
-	return strings.TrimRight(buf.String(), "\r\n")
-}
-
-// 获取行缩进空格数（每2个空格为一级）
-func getLineIndent(line string) int {
-	count := 0
-	for _, ch := range line {
-		if ch == ' ' {
-			count++
-		} else {
-			break
-		}
-	}
-	return count / 2
 }

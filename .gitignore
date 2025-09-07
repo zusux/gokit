@@ -1,1 +1,3 @@
 # git tag | Where-Object { $_ -like "v0.2.*" } | ForEach-Object { git tag -d $_ }
+/yaml/yamlmerge/example/config-tpl.yaml
+/yaml/yamlmerge/example/dev.yaml
