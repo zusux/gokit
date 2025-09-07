@@ -2,43 +2,66 @@ package yamlmerge
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
-// MergeWithComments merges a template YAML (with ${VAR} placeholders) with a vars YAML (with comments)
-func MergeWithComments(templateYAML string, varsYAML []byte) (string, error) {
+// MergeWithRegex 替换模板中的 ${VAR}，保留注释和缩进
+func MergeWithRegex(template string, varsYAML []byte) (string, error) {
+	// 解析 vars.yaml
 	var varsNode yaml.Node
 	if err := yaml.Unmarshal(varsYAML, &varsNode); err != nil {
 		return "", fmt.Errorf("parse vars yaml: %w", err)
 	}
 
-	flatVars := make(map[string]string)
-	comments := make(map[string]string)
-	extractVarsWithComments(&varsNode, "", flatVars, comments)
-
-	// Replace variables in template
-	var templateNode yaml.Node
-	if err := yaml.Unmarshal([]byte(templateYAML), &templateNode); err != nil {
-		return "", fmt.Errorf("parse template yaml: %w", err)
+	// 扁平化 vars Node
+	flatVars := make(map[string]*yaml.Node)
+	if len(varsNode.Content) > 0 {
+		flattenVars(varsNode.Content[0], "", flatVars)
 	}
-	applyReplacements(&templateNode, flatVars, comments)
 
-	var buf bytes.Buffer
-	enc := yaml.NewEncoder(&buf)
-	enc.SetIndent(2)
-	if err := enc.Encode(&templateNode); err != nil {
-		return "", fmt.Errorf("encode merged yaml: %w", err)
+	// 正则匹配模板中的 ${VAR}
+	re := regexp.MustCompile(`\$\{([A-Za-z0-9_.]+)\}`)
+	lines := strings.Split(template, "\n")
+	for i, line := range lines {
+		lines[i] = re.ReplaceAllStringFunc(line, func(s string) string {
+			key := re.FindStringSubmatch(s)[1]
+			valNode, ok := flatVars[key]
+			if !ok {
+				return s
+			}
+
+			indent := getLineIndent(line)
+			headComment := ""
+
+			if valNode.HeadComment != "" {
+				for _, c := range strings.Split(valNode.HeadComment, "\n") {
+					headComment += strings.Repeat("  ", indent) + "# " + c + "\n"
+				}
+			}
+
+			var valStr string
+			if valNode.Kind == yaml.ScalarNode {
+				valStr = nodeToYAMLStringWithLineComment(valNode, indent)
+				return headComment + valStr
+			} else {
+				// Sequence 或 Mapping
+				valStr = nodeToYAMLStringOnlyValue(valNode, indent+1)
+				return headComment + "\n" + valStr
+			}
+		})
 	}
-	return buf.String(), nil
+
+	return strings.Join(lines, "\n"), nil
 }
 
-// extractVarsWithComments flattens YAML and collects comments
-func extractVarsWithComments(node *yaml.Node, prefix string, out map[string]string, comments map[string]string) {
-	if node.Kind == yaml.MappingNode {
+// flattenVars 扁平化 vars Node
+func flattenVars(node *yaml.Node, prefix string, out map[string]*yaml.Node) {
+	switch node.Kind {
+	case yaml.MappingNode:
 		for i := 0; i < len(node.Content); i += 2 {
 			k := node.Content[i]
 			v := node.Content[i+1]
@@ -46,62 +69,75 @@ func extractVarsWithComments(node *yaml.Node, prefix string, out map[string]stri
 			if prefix != "" {
 				key = prefix + "." + key
 			}
-			if v.LineComment != "" {
-				comments[key] = v.LineComment
-			} else if k.HeadComment != "" {
-				comments[key] = k.HeadComment
-			}
-			switch v.Kind {
-			case yaml.MappingNode, yaml.SequenceNode:
-				extractVarsWithComments(v, key, out, comments)
-			case yaml.ScalarNode:
-				out[key] = v.Value
-			}
+			out[key] = v
+			flattenVars(v, key, out)
 		}
-	} else if node.Kind == yaml.SequenceNode {
-		var list []string
+	case yaml.SequenceNode:
 		for i, item := range node.Content {
 			key := fmt.Sprintf("%s.%d", prefix, i)
-			out[key] = item.Value
-			list = append(list, item.Value)
+			out[key] = item
+			flattenVars(item, key, out)
 		}
-		if prefix != "" {
-			j, _ := json.Marshal(list)
-			out[prefix] = string(j)
-		}
+	case yaml.ScalarNode:
+		out[prefix] = node
 	}
 }
 
-// applyReplacements walks the template tree and replaces ${KEY} with values and comments
-func applyReplacements(node *yaml.Node, values map[string]string, comments map[string]string) {
-	if node.Kind == yaml.ScalarNode {
-		node.Value = replaceVars(node.Value, values)
-		if cmt, ok := comments[extractKeyName(node.Value)]; ok {
-			node.LineComment = cmt
-		}
-		return
+// 标量节点 + 行内注释
+func nodeToYAMLStringWithLineComment(node *yaml.Node, indent int) string {
+	indentStr := strings.Repeat("  ", indent)
+	val := node.Value
+	if node.LineComment != "" {
+		val += " " + node.LineComment
 	}
-	for _, child := range node.Content {
-		applyReplacements(child, values, comments)
-	}
+	return indentStr + val
 }
 
-// replaceVars replaces ${KEY} with its value
-func replaceVars(input string, vars map[string]string) string {
-	re := regexp.MustCompile(`\$\{([A-Za-z0-9_.]+)\}`)
-	return re.ReplaceAllStringFunc(input, func(m string) string {
-		key := re.FindStringSubmatch(m)[1]
-		if val, ok := vars[key]; ok {
-			return val
+// 序列或映射只序列化值部分，不包含模板 key
+func nodeToYAMLStringOnlyValue(node *yaml.Node, indent int) string {
+	indentStr := strings.Repeat("  ", indent)
+	var buf bytes.Buffer
+
+	switch node.Kind {
+	case yaml.ScalarNode:
+		val := node.Value
+		if node.LineComment != "" {
+			val += " " + node.LineComment
 		}
-		return m
-	})
+		buf.WriteString(indentStr + val)
+	case yaml.SequenceNode:
+		for _, item := range node.Content {
+			if item.Kind == yaml.ScalarNode {
+				buf.WriteString(indentStr + "- " + item.Value)
+				if item.LineComment != "" {
+					buf.WriteString(" " + item.LineComment)
+				}
+				buf.WriteString("\n")
+			} else {
+				// 嵌套 Sequence/Mapping
+				buf.WriteString(indentStr + "- " + "\n" + nodeToYAMLStringOnlyValue(item, indent+1) + "\n")
+			}
+		}
+	case yaml.MappingNode:
+		for i := 0; i < len(node.Content); i += 2 {
+			k := node.Content[i]
+			v := node.Content[i+1]
+			buf.WriteString(fmt.Sprintf("%s%s: %s\n", indentStr, k.Value, nodeToYAMLStringOnlyValue(v, indent+1)))
+		}
+	}
+
+	return strings.TrimRight(buf.String(), "\r\n")
 }
 
-func extractKeyName(s string) string {
-	re := regexp.MustCompile(`^\$\{([A-Za-z0-9_.]+)\}$`)
-	if m := re.FindStringSubmatch(s); len(m) == 2 {
-		return m[1]
+// 获取行缩进空格数（每2个空格为一级）
+func getLineIndent(line string) int {
+	count := 0
+	for _, ch := range line {
+		if ch == ' ' {
+			count++
+		} else {
+			break
+		}
 	}
-	return ""
+	return count / 2
 }

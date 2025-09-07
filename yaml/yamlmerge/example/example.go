@@ -11,7 +11,7 @@ func main() {
 	vars, _ := os.ReadFile("./vars.yaml")
 	tmpl, _ := os.ReadFile("./template.yaml")
 
-	out, err := yamlmerge.MergeWithComments(string(tmpl), vars)
+	out, err := yamlmerge.MergeWithRegex(string(tmpl), vars)
 	if err != nil {
 		panic(err)
 	}

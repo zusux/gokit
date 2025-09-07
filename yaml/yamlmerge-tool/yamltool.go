@@ -1,65 +1,131 @@
-package main
+package yamlmerge
 
 import (
-	"flag"
+	"bytes"
 	"fmt"
-	"io"
-	"net/http"
-	"os"
+	"regexp"
 	"strings"
 
-	"github.com/zusux/gokit/yaml/yamlmerge"
+	"gopkg.in/yaml.v3"
 )
 
-func main() {
-	// 命令行参数
-	varsPath := flag.String("vars", "", "远程 vars.yaml URL")
-	tmplPath := flag.String("tmpl", "./configs/config-tpl.yaml", "本地 template.yaml 路径")
-	outPath := flag.String("out", "./configs/config.yaml", "输出的 config.yaml 路径")
-
-	flag.Parse()
-
-	if *varsPath == "" {
-		fmt.Println("❌ 错误: 必须指定 --vars 参数")
-		os.Exit(1)
+// MergeWithRegex 替换模板中的 ${VAR}，只保留 vars 的行内注释
+func MergeWithRegex(template string, varsYAML []byte) (string, error) {
+	var varsNode yaml.Node
+	if err := yaml.Unmarshal(varsYAML, &varsNode); err != nil {
+		return "", fmt.Errorf("parse vars yaml: %w", err)
 	}
-	var vars []byte
-	var err error
-	if strings.HasPrefix(*varsPath, "http://") || strings.HasPrefix(*varsPath, "https://") {
-		// HTTP 下载
-		resp, err := http.Get(*varsPath)
-		if err != nil {
-			panic(err)
+
+	flatVars := make(map[string]*yaml.Node)
+	if len(varsNode.Content) > 0 {
+		flattenVars(varsNode.Content[0], "", flatVars)
+	}
+
+	re := regexp.MustCompile(`\$\{([A-Za-z0-9_.]+)\}`)
+	lines := strings.Split(template, "\n")
+	for i, line := range lines {
+		lines[i] = re.ReplaceAllStringFunc(line, func(s string) string {
+			key := re.FindStringSubmatch(s)[1]
+			valNode, ok := flatVars[key]
+			if !ok {
+				return s
+			}
+
+			indent := getLineIndent(line)
+			var valStr string
+			if valNode.Kind == yaml.ScalarNode {
+				valStr = nodeToYAMLStringWithLineComment(valNode, indent)
+				return valStr
+			} else {
+				valStr = nodeToYAMLStringOnlyValue(valNode, indent+1)
+				return "\n" + valStr
+			}
+		})
+	}
+
+	return strings.Join(lines, "\n"), nil
+}
+
+// flattenVars 扁平化 vars Node
+func flattenVars(node *yaml.Node, prefix string, out map[string]*yaml.Node) {
+	switch node.Kind {
+	case yaml.MappingNode:
+		for i := 0; i < len(node.Content); i += 2 {
+			k := node.Content[i]
+			v := node.Content[i+1]
+			key := k.Value
+			if prefix != "" {
+				key = prefix + "." + key
+			}
+			out[key] = v
+			flattenVars(v, key, out)
 		}
-		defer resp.Body.Close()
-		vars, err = io.ReadAll(resp.Body)
-		if err != nil {
-			panic(err)
+	case yaml.SequenceNode:
+		for i, item := range node.Content {
+			key := fmt.Sprintf("%s.%d", prefix, i)
+			out[key] = item
+			flattenVars(item, key, out)
 		}
-	} else {
-		// 本地文件
-		vars, err = os.ReadFile(*varsPath)
-		if err != nil {
-			panic(err)
+	case yaml.ScalarNode:
+		out[prefix] = node
+	}
+}
+
+// 标量节点 + 行内注释
+func nodeToYAMLStringWithLineComment(node *yaml.Node, indent int) string {
+	indentStr := strings.Repeat("  ", indent)
+	val := node.Value
+	if node.LineComment != "" {
+		val += " " + node.LineComment
+	}
+	return indentStr + val
+}
+
+// 序列或映射只序列化值部分，不包含模板 key
+func nodeToYAMLStringOnlyValue(node *yaml.Node, indent int) string {
+	indentStr := strings.Repeat("  ", indent)
+	var buf bytes.Buffer
+
+	switch node.Kind {
+	case yaml.ScalarNode:
+		val := node.Value
+		if node.LineComment != "" {
+			val += " " + node.LineComment
+		}
+		buf.WriteString(indentStr + val)
+	case yaml.SequenceNode:
+		for _, item := range node.Content {
+			if item.Kind == yaml.ScalarNode {
+				buf.WriteString(indentStr + "- " + item.Value)
+				if item.LineComment != "" {
+					buf.WriteString(" " + item.LineComment)
+				}
+				buf.WriteString("\n")
+			} else {
+				// 嵌套 Sequence/Mapping
+				buf.WriteString(indentStr + "- " + "\n" + nodeToYAMLStringOnlyValue(item, indent+1) + "\n")
+			}
+		}
+	case yaml.MappingNode:
+		for i := 0; i < len(node.Content); i += 2 {
+			k := node.Content[i]
+			v := node.Content[i+1]
+			buf.WriteString(fmt.Sprintf("%s%s: %s\n", indentStr, k.Value, nodeToYAMLStringOnlyValue(v, indent+1)))
 		}
 	}
 
-	// 读取本地 template.yaml
-	tmpl, err := os.ReadFile(*tmplPath)
-	if err != nil {
-		panic(fmt.Errorf("读取本地模板 %s 失败: %w", *tmplPath, err))
-	}
+	return strings.TrimRight(buf.String(), "\r\n")
+}
 
-	// 合并
-	out, err := yamlmerge.MergeWithComments(string(tmpl), vars)
-	if err != nil {
-		panic(fmt.Errorf("合并失败: %w", err))
+// 获取行缩进空格数（每2个空格为一级）
+func getLineIndent(line string) int {
+	count := 0
+	for _, ch := range line {
+		if ch == ' ' {
+			count++
+		} else {
+			break
+		}
 	}
-
-	// 写入 config.yaml
-	if err := os.WriteFile(*outPath, []byte(out), 0644); err != nil {
-		panic(fmt.Errorf("写入 %s 失败: %w", *outPath, err))
-	}
-
-	fmt.Printf("✅ 已生成 %s\n", *outPath)
+	return count / 2
 }

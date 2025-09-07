@@ -3,6 +3,7 @@ port: ${PORT}
 mongo:
   order: ${MONGO_DSN.ORDER_SERVER}
   log: ${MONGO_DSN.LOG}
+# fff
 v: ${FEATURE_FLAGS}
-v2: ${IS_ENABLED}
+v2: ${IS_ENABLED} # v2
 v3: ${RETRY_COUNT}
