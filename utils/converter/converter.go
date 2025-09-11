@@ -1,11 +1,13 @@
 package converter
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/shopspring/decimal"
 	"log"
 	"strconv"
+
+	"github.com/shopspring/decimal"
 )
 
 // ToString 将任意类型转换为字符串表示，优化 float32 处理
@@ -54,12 +56,14 @@ func ToString(value interface{}) string {
 	case fmt.Stringer:
 		return v.String()
 	default:
-		byteData, err := json.Marshal(value)
-		if err != nil {
+		buf := &bytes.Buffer{}
+		enc := json.NewEncoder(buf)
+		enc.SetEscapeHTML(false) // ✅ 禁用默认转义
+		if err := enc.Encode(value); err != nil {
 			log.Println("json marshal failed: %w", err)
 			return ""
 		}
-		return string(byteData)
+		return buf.String()
 	}
 }
 
@@ -68,10 +72,12 @@ func ToJSON(value interface{}) (string, error) {
 	if value == nil {
 		return "null", nil
 	}
-	// 尝试 JSON 序列化
-	jsonBytes, err := json.Marshal(value)
-	if err != nil {
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false) // ✅ 禁用默认转义
+	if err := enc.Encode(value); err != nil {
+		log.Println("json marshal failed: %w", err)
 		return "", fmt.Errorf("json marshal failed: %w", err)
 	}
-	return string(jsonBytes), nil
+	return buf.String(), nil
 }
