@@ -2,7 +2,6 @@ package mon
 
 import (
 	"context"
-	"net/url"
 	"time"
 
 	"github.com/zusux/gokit/zlog"
@@ -13,7 +12,7 @@ import (
 func (m *ConfigMongo) Init(ctx context.Context) *mongo.Client {
 	// 替换成你的 MongoDB 地址
 	if m.Enable {
-		clientOptions := options.Client().ApplyURI(url.QueryEscape(m.Uri)).
+		clientOptions := options.Client().ApplyURI(m.Uri).
 			SetConnectTimeout(5 * time.Second).
 			SetServerSelectionTimeout(5 * time.Second)
 		// 连接
@@ -22,7 +21,10 @@ func (m *ConfigMongo) Init(ctx context.Context) *mongo.Client {
 			zlog.Errorf("MongoDB连接失败 err:%v", err.Error())
 			return nil
 		}
-
+		if client == nil {
+			zlog.Warn("MongoDB不可用，将跳过数据库操作")
+			return nil
+		}
 		// Ping 测试
 		err = client.Ping(ctx, nil)
 		if err != nil {
@@ -32,5 +34,6 @@ func (m *ConfigMongo) Init(ctx context.Context) *mongo.Client {
 		zlog.Info("MongoDB连接成功！")
 		return client
 	}
+	zlog.Warn("MongoDB 连接开关 关闭!")
 	return nil
 }
