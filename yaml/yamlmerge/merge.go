@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -55,9 +56,11 @@ func replaceNode(node *yaml.Node, vars map[string]*yaml.Node) error {
 				return nil
 			}
 			// 用 vars 节点替换当前节点
+			node.Style = yaml.DoubleQuotedStyle
 			node.Kind = valNode.Kind
 			node.Tag = valNode.Tag
 			node.Value = valNode.Value
+			node.Value = strings.ReplaceAll(node.Value, "&", "&")
 			node.Content = valNode.Content
 			node.HeadComment = valNode.HeadComment
 			node.LineComment = valNode.LineComment
