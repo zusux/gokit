@@ -2,16 +2,17 @@
 package api
 
 type EndpointTag struct {
-	App         string                 `json:"app" bson:"app"`
-	ServiceId   uint32                 `json:"service_id" bson:"service_id"`
-	Host        string                 `json:"host" bson:"host"`
-	Auth        *AuthTag               `json:"auth" bson:"auth"`
-	AllowOrigin string                 `json:"allow_origin" bson:"allow_origin"`
-	Rate        *RateTag               `json:"rate" bson:"rate"`
-	Timeout     int64                  `json:"timeout" bson:"timeout"`
-	HttpTarget  []*TargetTag           `json:"http_target" bson:"http_target"`
-	GrpcTarget  []*TargetTag           `json:"grpc_target" bson:"grpc_target"`
-	Requests    map[string]*RequestTag `json:"requests" bson:"requests"`
+	App                 string                 `json:"app" bson:"app"`
+	ServiceId           uint32                 `json:"service_id" bson:"service_id"`
+	Host                string                 `json:"host" bson:"host"`
+	Auth                *AuthTag               `json:"auth" bson:"auth"`
+	AllowOrigin         string                 `json:"allow_origin" bson:"allow_origin"`
+	Rate                *RateTag               `json:"rate" bson:"rate"`
+	Timeout             int64                  `json:"timeout" bson:"timeout"`
+	HttpTarget          []*TargetTag           `json:"http_target" bson:"http_target"`
+	GrpcTarget          []*TargetTag           `json:"grpc_target" bson:"grpc_target"`
+	Requests            map[string]*RequestTag `json:"requests" bson:"requests"`
+	GatewayEndpointType uint32                 `json:"gateway_endpoint_type" bson:"gateway_endpoint_type"`
 }
 
 func (x *Endpoint) ToEndpointTag() *EndpointTag {
@@ -47,6 +48,7 @@ func (x *Endpoint) ToEndpointTag() *EndpointTag {
 			}
 			return out
 		}(),
+		GatewayEndpointType: x.GatewayEndpointType,
 	}
 }
 func (x *EndpointTag) ToEndpoint() *Endpoint {
@@ -82,6 +84,7 @@ func (x *EndpointTag) ToEndpoint() *Endpoint {
 			}
 			return out
 		}(),
+		GatewayEndpointType: x.GatewayEndpointType,
 	}
 }
 

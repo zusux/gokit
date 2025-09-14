@@ -65,7 +65,7 @@ gen-api:
 .PHONY: gen-tag
 gen-tag:
 	@echo "==> Generating tag structs..."
-	@find api -name '*.proto' -print0 | \
+	@find gserver/invoke/api -name '*.proto' -print0 | \
 	xargs -0 -I{} protoc \
 		--proto_path=. \
 		--proto_path=./third_party \
