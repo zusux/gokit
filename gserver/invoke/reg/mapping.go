@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/samber/lo"
 	"github.com/zusux/gokit/gserver/invoke/api"
 	"github.com/zusux/gokit/gserver/zrpc"
 	"github.com/zusux/gokit/zlog"
@@ -22,6 +23,20 @@ import (
 var mu sync.Mutex
 var r = -1
 var methodHandlers = make(map[uint32]func(context.Context, json.RawMessage) (interface{}, error))
+
+type ServiceOptions struct {
+	ServiceId           uint32
+	GatewayEndpointType uint32 // 0: ip端口, 2:域名  3:服务发现
+	GatewayServiceAuth  uint32 // 0未设置, 1 跳过鉴权  2需要鉴权
+	GatewayServiceLimit uint32 // 限流数量
+}
+
+type MethodOptions struct {
+	MethodOptionId         uint32 // 方法id
+	GatewayMethodAuth      uint32 // 0未设置, 1 跳过鉴权  2需要鉴权
+	GatewayMethodRateLimit uint32 //限流数量
+	GatewayMethodSwitch    uint32 //代理开关 0 http  1 grpc
+}
 
 func GetHandler(fullId uint32) (func(context.Context, json.RawMessage) (interface{}, error), bool) {
 	if r == -1 {
@@ -42,24 +57,46 @@ func AutoRegisterGRPCServiceMethods(descProto []byte, app string, auth *api.Auth
 
 		// step2: 读取 .desc 并匹配方法名
 		// 假设服务名为 user.v1.UserSrv
-		serviceName := ExtractServiceFullNameFromImplByMatch(descProto, impl) // 比如 "user.v1.UserSrv"
-		serviceID := GetServiceIDFromDescriptor(descProto, serviceName)       // 例如 0x1001
-		endpoint, ok := ret[serviceID]
+		serviceName := ExtractServiceFullNameFromImplByMatch(descProto, impl)     // 比如 "user.v1.UserSrv"
+		serviceOptions := GetServiceOptionsFromDescriptor(descProto, serviceName) // 例如 0x1001
+		endpoint, ok := ret[serviceOptions.ServiceId]
 		if !ok {
+			var tmpAuth *api.Auth
+			if auth != nil {
+				tmpAuth = auth
+				switch serviceOptions.GatewayServiceAuth {
+				case 1:
+					tmpAuth.AuthSkip = true
+				case 2:
+					tmpAuth.AuthSkip = false
+				}
+			} else {
+				switch serviceOptions.GatewayServiceAuth {
+				case 1:
+					tmpAuth = &api.Auth{}
+					tmpAuth.AuthSkip = true
+				case 2:
+					tmpAuth = &api.Auth{}
+					tmpAuth.AuthSkip = false
+				default:
+					tmpAuth = &api.Auth{}
+				}
+			}
 			endpoint = &api.Endpoint{
 				App:         app,
-				ServiceId:   serviceID,
+				ServiceId:   serviceOptions.ServiceId,
 				Host:        "",
-				Auth:        auth,
+				Auth:        tmpAuth,
 				AllowOrigin: "*",
 				Rate: &api.Rate{
-					Limit: 100000,
+					Limit: lo.If(serviceOptions.GatewayServiceLimit > 0, float32(serviceOptions.GatewayServiceLimit)).Else(100000),
 					Burst: 100000,
 				},
-				Timeout:    timeOut,
-				HttpTarget: httpTarget,
-				GrpcTarget: grpcTarget,
-				Requests:   make(map[string]*api.Request),
+				Timeout:             timeOut,
+				HttpTarget:          httpTarget,
+				GrpcTarget:          grpcTarget,
+				Requests:            make(map[string]*api.Request),
+				GatewayEndpointType: serviceOptions.GatewayEndpointType,
 			}
 		}
 		// 构建 user.v1.UserSrv.Ping → 入参类型
@@ -69,11 +106,11 @@ func AutoRegisterGRPCServiceMethods(descProto []byte, app string, auth *api.Auth
 			fullMap[key] = param
 		}
 
-		e := RegisterFromDescriptor(descProto, impl, serviceID, timeOut, fullMap, endpoint)
+		e := RegisterFromDescriptor(descProto, impl, serviceOptions.ServiceId, auth, timeOut, fullMap, endpoint)
 		if e != nil {
 			err = errors.Join(err, e)
 		} else {
-			ret[serviceID] = endpoint
+			ret[serviceOptions.ServiceId] = endpoint
 		}
 	}
 	return ret, err
@@ -113,7 +150,8 @@ func ExtractServiceFullNameFromImplByMatch(desc []byte, impl any) string {
 
 	panic("no matching service name found for: " + expectService)
 }
-func GetServiceIDFromDescriptor(desc []byte, serviceName string) uint32 {
+
+func GetServiceOptionsFromDescriptor(desc []byte, serviceName string) ServiceOptions {
 	fds := &descriptorpb.FileDescriptorSet{}
 	if err := proto.Unmarshal(desc, fds); err != nil {
 		panic(fmt.Sprintf("unmarshal desc error: %v", err))
@@ -124,31 +162,39 @@ func GetServiceIDFromDescriptor(desc []byte, serviceName string) uint32 {
 		panic(fmt.Sprintf("desc load error: %v", err))
 	}
 
-	var foundID uint32
+	var serviceOptions ServiceOptions
 	rfd.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
 		for i := 0; i < fd.Services().Len(); i++ {
 			svc := fd.Services().Get(i)
 			if string(svc.FullName()) == serviceName {
 				opts := svc.Options().(*descriptorpb.ServiceOptions)
 				ext := proto.GetExtension(opts, zrpc.E_ServiceOptionId)
-				id, ok := ext.(uint32)
-				if ok {
-					foundID = id
+				if id, ok := ext.(uint32); ok {
+					serviceOptions.ServiceId = id
+				}
+
+				extType := proto.GetExtension(opts, zrpc.E_GatewayEndpointType)
+				if id, ok := extType.(uint32); ok {
+					serviceOptions.GatewayEndpointType = id
+				}
+				extAuth := proto.GetExtension(opts, zrpc.E_GatewayServiceAuth)
+				if id, ok := extAuth.(uint32); ok {
+					serviceOptions.GatewayServiceAuth = id
+				}
+				extLimit := proto.GetExtension(opts, zrpc.E_GatewayServiceLimit)
+				if id, ok := extLimit.(uint32); ok {
+					serviceOptions.GatewayServiceLimit = id
 				}
 				return false
 			}
 		}
 		return true
 	})
-
-	if foundID == 0 {
-		panic("service ID not found for: " + serviceName)
-	}
-	return foundID
+	return serviceOptions
 }
 
 // RegisterFromDescriptor 读取 descriptor 文件，根据服务映射注册方法处理器
-func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, timeout int64, methodTypeMap map[string]any, endpoint *api.Endpoint) error {
+func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, auth *api.Auth, timeout int64, methodTypeMap map[string]any, endpoint *api.Endpoint) error {
 
 	fds := &descriptorpb.FileDescriptorSet{}
 	if err := proto.Unmarshal(desc, fds); err != nil {
@@ -178,6 +224,36 @@ func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, time
 					zlog.Printf("warn: no method_id for %s.%s\n", serviceFullName, methodName)
 					continue
 				}
+
+				methodAuthPtr := proto.GetExtension(opts, zrpc.E_GatewayMethodAuth)
+				methodAuth := methodAuthPtr.(uint32)
+				var tmpAuth *api.Auth
+				if auth != nil {
+					switch methodAuth {
+					case 1:
+						tmpAuth = auth
+						tmpAuth.AuthSkip = true
+					case 2:
+						tmpAuth = auth
+						tmpAuth.AuthSkip = false
+					}
+				} else {
+					switch methodAuth {
+					case 1:
+						tmpAuth = &api.Auth{}
+						tmpAuth.AuthSkip = true
+					case 2:
+						tmpAuth = &api.Auth{}
+						tmpAuth.AuthSkip = false
+					}
+				}
+
+				methodRatePtr := proto.GetExtension(opts, zrpc.E_GatewayMethodRateLimit)
+				methodRate := methodRatePtr.(uint32)
+
+				methodSwitchPtr := proto.GetExtension(opts, zrpc.E_GatewayMethodSwitch)
+				methodSwitch := methodSwitchPtr.(uint32)
+
 				ext := proto.GetExtension(opts, annotations.E_Http)
 				httpServerFullName := strings.Split(strings.Trim(serviceFullName, "/ "), ".")
 				httpServer := httpServerFullName[0]
@@ -219,18 +295,18 @@ func RegisterFromDescriptor(desc []byte, serviceImpl any, serviceID uint32, time
 				endpoint.Requests[outerRouter] = &api.Request{
 					Router:      outerRouter,
 					Methods:     []string{httpMethod},
-					Auth:        nil,
+					Auth:        tmpAuth,
 					AllowOrigin: "*",
 					Timeout:     timeout,
 					MethodId:    methodID,
 					Rate: &api.Rate{
-						Limit: 100000,
+						Limit: lo.If(methodRate > 0, float32(methodRate)).Else(100000),
 						Burst: 100000,
 					},
 					Robin:      "simple",
 					HttpTarget: make([]*api.Target, 0),
 					GrpcTarget: make([]*api.Target, 0),
-					Switch:     "http",
+					Switch:     lo.If(methodSwitch == 0, "http").Else("grpc"),
 					Http: &api.Http{
 						Protocol: "http",
 						Method:   httpMethod,

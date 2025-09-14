@@ -28,6 +28,7 @@ message Endpoint {
   repeated Target http_target = 8 [(tag.json)="http_target",(tag.bson)="http_target"];
   repeated Target grpc_target = 9 [(tag.json)="grpc_target",(tag.bson)="grpc_target"];
   map<string,Request>  requests = 10 [(tag.json)="requests",(tag.bson)="requests"];
+  uint32 gateway_endpoint_type = 11 [(tag.json)="gateway_endpoint_type",(tag.bson)="gateway_endpoint_type"];
 }
 
 message Request {
@@ -75,8 +76,8 @@ message RegisterRouterReq {
 }
 
 message Auth {
-  bool auth_skip = 1 [(tag.json)="auth_skip",(tag.bson)="auth_skip"];
-  string secret = 2 [(tag.json)="secret",(tag.bson)="secret"];
+  bool  auth_skip = 1 [(tag.json)="auth_skip",(tag.bson)="auth_skip"];
+  string  secret = 2 [(tag.json)="secret",(tag.bson)="secret"];
   string  token_key = 3 [(tag.json)="token_key",(tag.bson)="token_key"];
 }
 

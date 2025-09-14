@@ -7,11 +7,17 @@ import "google/protobuf/descriptor.proto";
 
 // ------------------- 扩展定义 -------------------
 extend google.protobuf.ServiceOptions {
-  optional uint32 service_option_id = 50001;
+  optional uint32 service_option_id = 60000;  //服务id
+  optional uint32 gateway_endpoint_type = 60001;  // 0: ip端口, 2:域名  3:服务发现
+  optional uint32 gateway_service_limit = 60002; //限流数量
+  optional uint32 gateway_service_auth = 60003; // 0未设置, 1 跳过鉴权  2需要鉴权
 }
 
 extend google.protobuf.MethodOptions {
-  optional uint32 method_option_id = 50002;
+  optional uint32 method_option_id = 60010;   // 方法id
+  optional uint32 gateway_method_auth = 60011;  // 0未设置, 1 跳过鉴权  2需要鉴权
+  optional uint32 gateway_method_rate_limit = 60012; //限流数量
+  optional uint32 gateway_method_switch = 60013;     //代理开关 0 http  1 grpc
 }
 
 
