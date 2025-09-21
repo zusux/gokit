@@ -53,6 +53,10 @@ func (m *Mysql) InitMysql() (*gorm.DB, error) {
 	if m.Options != "" {
 		dsn += "&" + strings.Trim(m.Options, "&")
 	}
+	return InitDsnMysql(dsn)
+}
+
+func InitDsnMysql(dsn string) (*gorm.DB, error) {
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
 		Logger:      mlog.GetLogger(),
 		QueryFields: true,
