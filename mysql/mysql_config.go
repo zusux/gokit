@@ -1,13 +1,14 @@
 package mysql
 
 import (
-	"dario.cat/mergo"
 	"fmt"
+	"strings"
+
+	"dario.cat/mergo"
 	"github.com/zusux/gokit/mysql/mlog"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
-	"strings"
 )
 
 type ConfigMysql struct {
@@ -33,7 +34,7 @@ func (m *Mysql) InitMysql() (*gorm.DB, error) {
 		MaxOpenConn: 10,
 		MaxIdleConn: 10,
 	}
-	err := mergo.Merge(&m, defaultConfig)
+	err := mergo.Merge(m, defaultConfig)
 	if err != nil {
 		return nil, err
 	}

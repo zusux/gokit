@@ -1,14 +1,19 @@
 package mysql
 
 import (
-	"github.com/zusux/gokit/zlog"
+	"log"
+
 	"gorm.io/gorm"
 )
 
-func (c *ConfigMysql) InitMysql() *gorm.DB {
+func (c *ConfigMysql) MustInitMysql() *gorm.DB {
 	db, err := c.MysqlConfig.InitMysql()
 	if err != nil {
-		zlog.Fatalf("mysql init failed: %v", err)
+		log.Fatalf("mysql init failed: %v", err)
 	}
 	return db
+}
+
+func (c *ConfigMysql) InitMysql() (*gorm.DB, error) {
+	return c.MysqlConfig.InitMysql()
 }
